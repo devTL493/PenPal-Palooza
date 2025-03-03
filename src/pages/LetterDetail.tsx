@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -244,36 +245,54 @@ const LetterDetail = () => {
               {conversation.map((historyLetter, index) => (
                 <div 
                   key={historyLetter.id} 
-                  className={`paper border rounded-md p-6 ${
-                    historyLetter.id === id ? 'border-primary/50 bg-primary/5' : ''
-                  }`}
+                  className={`${
+                    historyLetter.sender.isYou 
+                      ? "ml-auto mr-0 max-w-[85%]" 
+                      : "ml-0 mr-auto max-w-[85%]"
+                  } ${
+                    historyLetter.id === id 
+                      ? "border-primary/50 bg-primary/5" 
+                      : historyLetter.sender.isYou 
+                        ? "border-secondary bg-secondary/20" 
+                        : "border-muted bg-muted/10"
+                  } paper border rounded-md p-6`}
                 >
-                  <div className="flex items-start gap-4 mb-3">
+                  <div className={`flex items-start gap-4 mb-3 ${
+                    historyLetter.sender.isYou ? "flex-row-reverse text-right" : "flex-row text-left"
+                  }`}>
                     {historyLetter.sender.avatar ? (
                       <Avatar className="h-10 w-10 border border-border">
                         <AvatarImage src={historyLetter.sender.avatar} alt={historyLetter.sender.name} />
                         <AvatarFallback>{historyLetter.sender.name.charAt(0)}</AvatarFallback>
                       </Avatar>
                     ) : (
-                      <Avatar className={`h-10 w-10 ${historyLetter.sender.isYou ? 'bg-secondary' : 'bg-primary/10'}`}>
+                      <Avatar className={`h-10 w-10 ${
+                        historyLetter.sender.isYou 
+                          ? "bg-primary/20 text-primary" 
+                          : "bg-secondary/30 text-foreground"
+                      }`}>
                         <AvatarFallback>{historyLetter.sender.name.charAt(0)}</AvatarFallback>
                       </Avatar>
                     )}
                     
                     <div className="flex-1">
-                      <div className="flex justify-between">
-                        <h3 className="font-medium font-serif">
-                          {historyLetter.sender.name}
+                      <div className={`flex ${historyLetter.sender.isYou ? "justify-end" : "justify-between"}`}>
+                        <h3 className="font-medium font-serif flex items-center">
                           {historyLetter.sender.isYou && (
-                            <Badge variant="secondary" className="ml-2">
+                            <Badge variant="primary" className="mr-2">
                               You
                             </Badge>
                           )}
+                          {historyLetter.sender.name}
                         </h3>
-                        <span className="text-sm text-muted-foreground">{historyLetter.date}</span>
+                        <span className={`text-sm text-muted-foreground ${historyLetter.sender.isYou ? "mr-2" : "ml-2"}`}>
+                          {historyLetter.date}
+                        </span>
                       </div>
                       
-                      <div className="mt-2 text-sm whitespace-pre-line font-serif">
+                      <div className={`mt-2 text-sm whitespace-pre-line font-serif ${
+                        historyLetter.sender.isYou ? "text-right" : "text-left"
+                      }`}>
                         {historyLetter.content}
                       </div>
                     </div>
