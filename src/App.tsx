@@ -10,6 +10,7 @@ import Compose from "./pages/Compose";
 import PenPals from "./pages/PenPals";
 import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
+import LetterDetail from "./pages/LetterDetail";
 
 const queryClient = new QueryClient();
 
@@ -22,6 +23,7 @@ const App = () => (
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/letter/:id" element={<LetterDetail />} />
           <Route path="/compose" element={<Compose />} />
           <Route path="/penpals" element={<PenPals />} />
           <Route path="/profile" element={<Profile />} />

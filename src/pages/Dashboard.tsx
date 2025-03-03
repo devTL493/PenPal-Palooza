@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import {
   Tabs,
@@ -82,10 +82,11 @@ const sentLetters = [
 
 const Dashboard = () => {
   const [searchQuery, setSearchQuery] = useState('');
+  const navigate = useNavigate();
 
   const handleOpenLetter = (id: string) => {
     console.log(`Opening letter ${id}`);
-    // In a real app, this would navigate to a letter detail view
+    navigate(`/letter/${id}`);
   };
 
   return (
