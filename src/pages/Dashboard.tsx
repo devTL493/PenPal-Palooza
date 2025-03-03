@@ -41,7 +41,7 @@ const inboxLetters = [
     sender: {
       name: 'Sophia Williams',
     },
-    preview: 'I've been thinking about what you wrote regarding the book we're both reading. The character development is indeed fascinating...',
+    preview: "I've been thinking about what you wrote regarding the book we're both reading. The character development is indeed fascinating...",
     timestamp: '3 days ago',
     isUnread: false,
     hasSaved: true,
@@ -65,7 +65,7 @@ const sentLetters = [
       name: 'To: Emily Chen',
       avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=256&auto=format&fit=crop',
     },
-    preview: 'I hope this letter finds you well. I've been meaning to respond to your question about my favorite books...',
+    preview: "I hope this letter finds you well. I've been meaning to respond to your question about my favorite books...",
     timestamp: '1 day ago',
     hasAttachments: true,
   },
@@ -75,7 +75,7 @@ const sentLetters = [
       name: 'To: Marcus Johnson',
       avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=256&auto=format&fit=crop',
     },
-    preview: 'Thank you for sharing your story with me. It's remarkable how similar our childhood experiences were despite growing up in different...',
+    preview: "Thank you for sharing your story with me. It's remarkable how similar our childhood experiences were despite growing up in different...",
     timestamp: '4 days ago',
   },
 ];
