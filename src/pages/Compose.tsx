@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,7 +19,6 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import Navigation from '@/components/Navigation';
 import { Send, Paperclip, Save, Clock, Type, Palette, Link as LinkIcon, Bold, Italic, Underline, AlignLeft, AlignCenter, AlignRight } from 'lucide-react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 // Sample pen pals for the demo
@@ -84,14 +83,18 @@ const borderStyleOptions = [
   { value: 'border-2 border-gray-300 rounded-lg', label: 'Rounded', description: 'Rounded corners with border' },
 ];
 
-interface TextStyle {
-  font: string;
-  size: string;
-  color: string;
-  isBold: boolean;
-  isItalic: boolean;
-  isUnderline: boolean;
-  alignment: 'text-left' | 'text-center' | 'text-right';
+interface InlineStyle {
+  start: number;
+  end: number;
+  font?: string;
+  size?: string;
+  color?: string;
+  isBold?: boolean;
+  isItalic?: boolean;
+  isUnderline?: boolean;
+  alignment?: 'text-left' | 'text-center' | 'text-right';
+  isLink?: boolean;
+  linkUrl?: string;
 }
 
 interface LetterStyle {
@@ -99,29 +102,27 @@ interface LetterStyle {
   borderStyle: string;
 }
 
-interface Link {
-  text: string;
-  url: string;
-}
-
 const Compose = () => {
   const { toast } = useToast();
   const [recipient, setRecipient] = useState('');
   const [subject, setSubject] = useState('');
   const [content, setContent] = useState('');
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const [isFormatToolbarOpen, setIsFormatToolbarOpen] = useState(false);
+  const [selectionRange, setSelectionRange] = useState<{start: number, end: number} | null>(null);
   
-  // Text styling state
-  const [textStyle, setTextStyle] = useState<TextStyle>({
+  // Style for the whole document (default styling)
+  const [documentStyle, setDocumentStyle] = useState({
     font: 'font-serif',
     size: 'text-lg',
     color: 'text-black',
-    isBold: false,
-    isItalic: false,
-    isUnderline: false,
-    alignment: 'text-left',
+    alignment: 'text-left' as const,
   });
+  
+  // Inline styling for specific text selections
+  const [inlineStyles, setInlineStyles] = useState<InlineStyle[]>([]);
   
   // Letter styling state
   const [letterStyle, setLetterStyle] = useState<LetterStyle>({
@@ -129,10 +130,23 @@ const Compose = () => {
     borderStyle: 'border-none',
   });
 
+  // Selected text formatting state
+  const [activeTextFormat, setActiveTextFormat] = useState({
+    isBold: false,
+    isItalic: false,
+    isUnderline: false,
+    font: documentStyle.font,
+    size: documentStyle.size,
+    color: documentStyle.color,
+    alignment: documentStyle.alignment,
+  });
+
   // Link insertion
   const [linkText, setLinkText] = useState('');
   const [linkUrl, setLinkUrl] = useState('');
   const [linkPopoverOpen, setLinkPopoverOpen] = useState(false);
+  const [stylePopoverOpen, setStylePopoverOpen] = useState(false);
+  const [paperStylePopoverOpen, setPaperStylePopoverOpen] = useState(false);
   
   // Auto-save functionality
   useEffect(() => {
@@ -143,7 +157,76 @@ const Compose = () => {
     }, 30000); // Auto-save every 30 seconds
 
     return () => clearInterval(autoSaveInterval);
-  }, [content, subject, recipient, textStyle, letterStyle]);
+  }, [content, subject, recipient, inlineStyles, letterStyle]);
+
+  // Handle text selection
+  useEffect(() => {
+    const handleSelectionChange = () => {
+      if (!textareaRef.current) return;
+
+      const start = textareaRef.current.selectionStart;
+      const end = textareaRef.current.selectionEnd;
+      
+      if (start !== end) {
+        setSelectionRange({ start, end });
+        setIsFormatToolbarOpen(true);
+        
+        // Check if selection has existing styles and update active format buttons
+        updateActiveFormatsForSelection(start, end);
+      } else {
+        setSelectionRange(null);
+        setIsFormatToolbarOpen(false);
+      }
+    };
+
+    const textarea = textareaRef.current;
+    if (textarea) {
+      textarea.addEventListener('mouseup', handleSelectionChange);
+      textarea.addEventListener('keyup', handleSelectionChange);
+    }
+
+    return () => {
+      if (textarea) {
+        textarea.removeEventListener('mouseup', handleSelectionChange);
+        textarea.removeEventListener('keyup', handleSelectionChange);
+      }
+    };
+  }, [inlineStyles, content]);
+
+  const updateActiveFormatsForSelection = (start: number, end: number) => {
+    // Find styles that affect this selection
+    const overlappingStyles = inlineStyles.filter(style => 
+      (style.start <= start && style.end > start) || 
+      (style.start < end && style.end >= end) ||
+      (start <= style.start && end >= style.end)
+    );
+
+    if (overlappingStyles.length > 0) {
+      // Get the last applied style (priority to the most recent)
+      const latestStyle = overlappingStyles[overlappingStyles.length - 1];
+      
+      setActiveTextFormat({
+        isBold: latestStyle.isBold || false,
+        isItalic: latestStyle.isItalic || false,
+        isUnderline: latestStyle.isUnderline || false,
+        font: latestStyle.font || documentStyle.font,
+        size: latestStyle.size || documentStyle.size,
+        color: latestStyle.color || documentStyle.color,
+        alignment: latestStyle.alignment || documentStyle.alignment,
+      });
+    } else {
+      // Reset to document default if no styles apply
+      setActiveTextFormat({
+        isBold: false,
+        isItalic: false,
+        isUnderline: false,
+        font: documentStyle.font,
+        size: documentStyle.size,
+        color: documentStyle.color,
+        alignment: documentStyle.alignment,
+      });
+    }
+  };
 
   const handleAutoSave = () => {
     setIsSaving(true);
@@ -153,6 +236,65 @@ const Compose = () => {
       setLastSaved(new Date());
       setIsSaving(false);
     }, 800);
+  };
+
+  const applyFormatting = (formatType: string, value: any) => {
+    if (!selectionRange) return;
+    
+    const { start, end } = selectionRange;
+    
+    // Create a new style object for this selection
+    const newStyle: InlineStyle = {
+      start,
+      end,
+      ...activeTextFormat
+    };
+    
+    // Update the specific format that was changed
+    switch (formatType) {
+      case 'bold':
+        newStyle.isBold = !activeTextFormat.isBold;
+        setActiveTextFormat(prev => ({ ...prev, isBold: !prev.isBold }));
+        break;
+      case 'italic':
+        newStyle.isItalic = !activeTextFormat.isItalic;
+        setActiveTextFormat(prev => ({ ...prev, isItalic: !prev.isItalic }));
+        break;
+      case 'underline':
+        newStyle.isUnderline = !activeTextFormat.isUnderline;
+        setActiveTextFormat(prev => ({ ...prev, isUnderline: !prev.isUnderline }));
+        break;
+      case 'font':
+        newStyle.font = value;
+        setActiveTextFormat(prev => ({ ...prev, font: value }));
+        break;
+      case 'size':
+        newStyle.size = value;
+        setActiveTextFormat(prev => ({ ...prev, size: value }));
+        break;
+      case 'color':
+        newStyle.color = value;
+        setActiveTextFormat(prev => ({ ...prev, color: value }));
+        break;
+      case 'alignment':
+        newStyle.alignment = value;
+        setActiveTextFormat(prev => ({ ...prev, alignment: value }));
+        // Alignment affects the whole content
+        setDocumentStyle(prev => ({ ...prev, alignment: value }));
+        break;
+    }
+    
+    // Add this style to the array
+    setInlineStyles(prev => [...prev, newStyle]);
+    
+    // Close style popovers after applying
+    setStylePopoverOpen(false);
+    
+    // Update the textarea to maintain focus
+    if (textareaRef.current) {
+      textareaRef.current.focus();
+      textareaRef.current.setSelectionRange(start, end);
+    }
   };
 
   const handleSend = () => {
@@ -188,7 +330,8 @@ const Compose = () => {
       recipient,
       subject,
       content,
-      textStyle,
+      documentStyle,
+      inlineStyles,
       letterStyle,
       sentAt: new Date(),
     };
@@ -205,6 +348,7 @@ const Compose = () => {
     setRecipient('');
     setSubject('');
     setContent('');
+    setInlineStyles([]);
     setLastSaved(null);
   };
 
@@ -214,60 +358,116 @@ const Compose = () => {
   };
 
   const insertLink = () => {
-    if (!linkText || !linkUrl) {
+    if (!selectionRange || !linkText || !linkUrl) {
       toast({
         title: "Both link text and URL are required",
-        description: "Please enter both link text and URL.",
+        description: "Please select text and enter both link text and URL.",
         variant: "destructive",
       });
       return;
     }
 
     // Simple URL validation
+    let finalUrl = linkUrl;
     if (!linkUrl.startsWith('http://') && !linkUrl.startsWith('https://')) {
-      setLinkUrl(`https://${linkUrl}`);
+      finalUrl = `https://${linkUrl}`;
     }
 
-    // Insert markdown-style link into content
-    const linkMarkdown = `[${linkText}](${linkUrl})`;
-    const textAreaElement = document.getElementById('letter-content') as HTMLTextAreaElement;
+    const { start, end } = selectionRange;
+
+    // Create new style for the link
+    const newLinkStyle: InlineStyle = {
+      start,
+      end,
+      isLink: true,
+      linkUrl: finalUrl,
+      color: 'text-blue-600',
+      isUnderline: true,
+    };
+
+    setInlineStyles(prev => [...prev, newLinkStyle]);
     
-    if (textAreaElement) {
-      const start = textAreaElement.selectionStart;
-      const end = textAreaElement.selectionEnd;
-      
-      const newContent = 
-        content.substring(0, start) + 
-        linkMarkdown + 
-        content.substring(end);
-      
-      setContent(newContent);
-      
-      // Reset link fields
-      setLinkText('');
-      setLinkUrl('');
-      setLinkPopoverOpen(false);
-      
-      // Focus back on textarea
-      setTimeout(() => {
-        textAreaElement.focus();
-        textAreaElement.selectionStart = start + linkMarkdown.length;
-        textAreaElement.selectionEnd = start + linkMarkdown.length;
-      }, 0);
+    // Reset link fields and close popover
+    setLinkText('');
+    setLinkUrl('');
+    setLinkPopoverOpen(false);
+    
+    // Return focus to textarea
+    if (textareaRef.current) {
+      textareaRef.current.focus();
     }
   };
 
-  // Generate combined class string for the letter content
-  const letterContentClasses = `
-    ${textStyle.font} 
-    ${textStyle.size} 
-    ${textStyle.color} 
-    ${textStyle.isBold ? 'font-bold' : 'font-normal'} 
-    ${textStyle.isItalic ? 'italic' : ''} 
-    ${textStyle.isUnderline ? 'underline' : ''} 
-    ${textStyle.alignment} 
-    min-h-[300px] leading-relaxed resize-none focus-visible:ring-0 border-0 p-0 shadow-none
-  `;
+  // Function to render the styled content for preview
+  const renderStyledContent = () => {
+    if (!content) return <p className="text-gray-400">Your letter will appear here...</p>;
+    
+    // Create spans with appropriate styling
+    let result = [];
+    let lastIndex = 0;
+    
+    // Sort styles by start position
+    const sortedStyles = [...inlineStyles].sort((a, b) => a.start - b.start);
+    
+    for (let i = 0; i < sortedStyles.length; i++) {
+      const style = sortedStyles[i];
+      
+      // Add text before this style if needed
+      if (style.start > lastIndex) {
+        result.push(
+          <span key={`plain-${lastIndex}`} className={`${documentStyle.font} ${documentStyle.size} ${documentStyle.color}`}>
+            {content.substring(lastIndex, style.start)}
+          </span>
+        );
+      }
+      
+      // Create the styled span
+      const spanClasses = `
+        ${style.font || documentStyle.font}
+        ${style.size || documentStyle.size}
+        ${style.color || documentStyle.color}
+        ${style.isBold ? 'font-bold' : ''}
+        ${style.isItalic ? 'italic' : ''}
+        ${style.isUnderline ? 'underline' : ''}
+        ${style.isLink ? 'cursor-pointer' : ''}
+      `;
+      
+      const styledText = content.substring(style.start, style.end);
+      
+      if (style.isLink) {
+        result.push(
+          <a 
+            key={`styled-${style.start}-${style.end}`} 
+            href={style.linkUrl} 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className={spanClasses}
+          >
+            {styledText}
+          </a>
+        );
+      } else {
+        result.push(
+          <span key={`styled-${style.start}-${style.end}`} className={spanClasses}>
+            {styledText}
+          </span>
+        );
+      }
+      
+      lastIndex = style.end;
+    }
+    
+    // Add any remaining text after the last style
+    if (lastIndex < content.length) {
+      result.push(
+        <span key={`plain-end`} className={`${documentStyle.font} ${documentStyle.size} ${documentStyle.color}`}>
+          {content.substring(lastIndex)}
+        </span>
+      );
+    }
+    
+    return <div className={`${documentStyle.alignment} whitespace-pre-wrap`}>{result}</div>;
+  };
 
   // Generate combined class string for the letter card
   const letterCardClasses = `
@@ -284,319 +484,310 @@ const Compose = () => {
         <div className="max-w-4xl mx-auto">
           <h1 className="text-3xl font-serif font-medium mb-6">Compose Letter</h1>
           
-          <Tabs defaultValue="compose" className="mb-6">
-            <TabsList className="mb-4">
-              <TabsTrigger value="compose">Compose</TabsTrigger>
-              <TabsTrigger value="text-style">Text Style</TabsTrigger>
-              <TabsTrigger value="letter-style">Letter Style</TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="text-style" className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <h2 className="text-xl font-medium">Text Styling Options</h2>
-                  <p className="text-muted-foreground">
-                    Customize how your text appears to your pen pal
-                  </p>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">Font Family</label>
-                      <Select 
-                        value={textStyle.font} 
-                        onValueChange={(value) => setTextStyle({...textStyle, font: value})}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select font" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {fontOptions.map((font) => (
-                            <SelectItem key={font.value} value={font.value} className={font.value}>
-                              {font.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">Font Size</label>
-                      <Select 
-                        value={textStyle.size} 
-                        onValueChange={(value) => setTextStyle({...textStyle, size: value})}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select size" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {fontSizeOptions.map((size) => (
-                            <SelectItem key={size.value} value={size.value}>
-                              {size.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">Text Color</label>
-                      <Select 
-                        value={textStyle.color} 
-                        onValueChange={(value) => setTextStyle({...textStyle, color: value})}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select color" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {colorOptions.map((color) => (
-                            <SelectItem key={color.value} value={color.value}>
-                              <div className="flex items-center">
-                                <div 
-                                  className="w-4 h-4 mr-2 rounded-full" 
-                                  style={{backgroundColor: color.color}}
-                                />
-                                {color.label}
-                              </div>
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                  
-                  <div className="flex flex-wrap gap-2">
-                    <Button
-                      variant={textStyle.isBold ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setTextStyle({...textStyle, isBold: !textStyle.isBold})}
-                    >
-                      <Bold className="h-4 w-4" />
-                      <span className="ml-2">Bold</span>
-                    </Button>
-                    
-                    <Button
-                      variant={textStyle.isItalic ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setTextStyle({...textStyle, isItalic: !textStyle.isItalic})}
-                    >
-                      <Italic className="h-4 w-4" />
-                      <span className="ml-2">Italic</span>
-                    </Button>
-                    
-                    <Button
-                      variant={textStyle.isUnderline ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setTextStyle({...textStyle, isUnderline: !textStyle.isUnderline})}
-                    >
-                      <Underline className="h-4 w-4" />
-                      <span className="ml-2">Underline</span>
-                    </Button>
-                    
-                    <Button
-                      variant={textStyle.alignment === 'text-left' ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setTextStyle({...textStyle, alignment: 'text-left'})}
-                    >
-                      <AlignLeft className="h-4 w-4" />
-                      <span className="ml-2">Left</span>
-                    </Button>
-                    
-                    <Button
-                      variant={textStyle.alignment === 'text-center' ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setTextStyle({...textStyle, alignment: 'text-center'})}
-                    >
-                      <AlignCenter className="h-4 w-4" />
-                      <span className="ml-2">Center</span>
-                    </Button>
-                    
-                    <Button
-                      variant={textStyle.alignment === 'text-right' ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setTextStyle({...textStyle, alignment: 'text-right'})}
-                    >
-                      <AlignRight className="h-4 w-4" />
-                      <span className="ml-2">Right</span>
-                    </Button>
-                  </div>
-                  
-                  <div className="rounded-md border p-4">
-                    <h3 className="text-sm font-medium mb-2">Preview:</h3>
-                    <p className={`${textStyle.font} ${textStyle.size} ${textStyle.color} ${textStyle.isBold ? 'font-bold' : 'font-normal'} ${textStyle.isItalic ? 'italic' : ''} ${textStyle.isUnderline ? 'underline' : ''} ${textStyle.alignment}`}>
-                      This is how your text will appear to your pen pal.
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-            
-            <TabsContent value="letter-style" className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <h2 className="text-xl font-medium">Letter Styling Options</h2>
-                  <p className="text-muted-foreground">
-                    Customize the appearance of your letter
-                  </p>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Paper Style</label>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                      {paperStyleOptions.map((style) => (
-                        <div
-                          key={style.value}
-                          className={`p-4 rounded-md cursor-pointer border-2 transition-all ${
-                            letterStyle.paperStyle === style.value 
-                              ? 'border-primary' 
-                              : 'border-transparent hover:border-gray-200'
-                          } ${style.value}`}
-                          onClick={() => setLetterStyle({...letterStyle, paperStyle: style.value})}
-                        >
-                          <div className="h-20 flex items-center justify-center text-center">
-                            <span>{style.label}</span>
-                          </div>
-                          <p className="text-xs text-muted-foreground mt-2">{style.description}</p>
-                        </div>
+          <Card className={letterCardClasses}>
+            <CardHeader className="border-b border-border">
+              <div className="space-y-4">
+                <div>
+                  <Select value={recipient} onValueChange={setRecipient}>
+                    <SelectTrigger id="recipient">
+                      <SelectValue placeholder="Select recipient..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {samplePenPals.map((penpal) => (
+                        <SelectItem key={penpal.id} value={penpal.id}>
+                          {penpal.name}
+                        </SelectItem>
                       ))}
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Border Style</label>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                      {borderStyleOptions.map((style) => (
-                        <div
-                          key={style.value}
-                          className={`p-4 rounded-md cursor-pointer transition-all ${style.value} ${
-                            letterStyle.borderStyle === style.value 
-                              ? 'outline outline-2 outline-primary' 
-                              : 'hover:bg-gray-50'
-                          }`}
-                          onClick={() => setLetterStyle({...letterStyle, borderStyle: style.value})}
-                        >
-                          <div className="h-20 flex items-center justify-center text-center">
-                            <span>{style.label}</span>
-                          </div>
-                          <p className="text-xs text-muted-foreground mt-2">{style.description}</p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                  
-                  <div className={`p-6 rounded-md ${letterStyle.paperStyle} ${letterStyle.borderStyle}`}>
-                    <h3 className="text-sm font-medium mb-2">Preview:</h3>
-                    <p>This is how your letter's style will appear.</p>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-            
-            <TabsContent value="compose">
-              <Card className={letterCardClasses}>
-                <CardHeader className="border-b border-border">
-                  <div className="space-y-4">
-                    <div>
-                      <Select value={recipient} onValueChange={setRecipient}>
-                        <SelectTrigger id="recipient">
-                          <SelectValue placeholder="Select recipient..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {samplePenPals.map((penpal) => (
-                            <SelectItem key={penpal.id} value={penpal.id}>
-                              {penpal.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    
-                    <div>
-                      <Input
-                        id="subject"
-                        placeholder="Subject"
-                        value={subject}
-                        onChange={(e) => setSubject(e.target.value)}
-                        className="font-medium"
-                      />
-                    </div>
-                  </div>
-                </CardHeader>
+                    </SelectContent>
+                  </Select>
+                </div>
                 
-                <CardContent className="pt-6">
-                  <div className="flex gap-2 mb-4 flex-wrap">
-                    <Popover open={linkPopoverOpen} onOpenChange={setLinkPopoverOpen}>
-                      <PopoverTrigger asChild>
-                        <Button variant="outline" size="sm">
-                          <LinkIcon className="h-4 w-4 mr-2" />
-                          Add Link
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-80">
-                        <div className="space-y-4">
-                          <h3 className="font-medium">Insert Link</h3>
-                          <div className="space-y-2">
-                            <Input
-                              placeholder="Link text"
-                              value={linkText}
-                              onChange={(e) => setLinkText(e.target.value)}
-                            />
-                            <Input
-                              placeholder="URL (e.g., https://example.com)"
-                              value={linkUrl}
-                              onChange={(e) => setLinkUrl(e.target.value)}
-                            />
-                          </div>
-                          <div className="flex justify-end">
-                            <Button size="sm" onClick={insertLink}>Insert</Button>
-                          </div>
-                        </div>
-                      </PopoverContent>
-                    </Popover>
-                  </div>
+                <div>
+                  <Input
+                    id="subject"
+                    placeholder="Subject"
+                    value={subject}
+                    onChange={(e) => setSubject(e.target.value)}
+                    className="font-medium"
+                  />
+                </div>
+              </div>
+            </CardHeader>
+            
+            <CardContent className="pt-6">
+              <div className="mb-4 flex flex-wrap items-center gap-2 border-b pb-3">
+                {/* Formatting toolbar that appears above the editor */}
+                <Popover open={stylePopoverOpen} onOpenChange={setStylePopoverOpen}>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" size="sm">
+                      <Type className="h-4 w-4 mr-2" />
+                      Text Style
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-80">
+                    <div className="space-y-4">
+                      <h3 className="font-medium">Text Styling</h3>
+                      
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">Font</label>
+                        <Select 
+                          value={activeTextFormat.font} 
+                          onValueChange={(value) => applyFormatting('font', value)}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select font" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {fontOptions.map((font) => (
+                              <SelectItem key={font.value} value={font.value} className={font.value}>
+                                {font.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">Size</label>
+                        <Select 
+                          value={activeTextFormat.size} 
+                          onValueChange={(value) => applyFormatting('size', value)}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select size" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {fontSizeOptions.map((size) => (
+                              <SelectItem key={size.value} value={size.value}>
+                                {size.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">Color</label>
+                        <Select 
+                          value={activeTextFormat.color} 
+                          onValueChange={(value) => applyFormatting('color', value)}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select color" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {colorOptions.map((color) => (
+                              <SelectItem key={color.value} value={color.value}>
+                                <div className="flex items-center">
+                                  <div 
+                                    className="w-4 h-4 mr-2 rounded-full" 
+                                    style={{backgroundColor: color.color}}
+                                  />
+                                  {color.label}
+                                </div>
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  </PopoverContent>
+                </Popover>
+                
+                <Button 
+                  variant={activeTextFormat.isBold ? "default" : "outline"} 
+                  size="sm" 
+                  onClick={() => applyFormatting('bold', null)}
+                >
+                  <Bold className="h-4 w-4" />
+                </Button>
+                
+                <Button 
+                  variant={activeTextFormat.isItalic ? "default" : "outline"} 
+                  size="sm" 
+                  onClick={() => applyFormatting('italic', null)}
+                >
+                  <Italic className="h-4 w-4" />
+                </Button>
+                
+                <Button 
+                  variant={activeTextFormat.isUnderline ? "default" : "outline"} 
+                  size="sm" 
+                  onClick={() => applyFormatting('underline', null)}
+                >
+                  <Underline className="h-4 w-4" />
+                </Button>
+                
+                <div className="flex h-full">
+                  <Button 
+                    variant={activeTextFormat.alignment === 'text-left' ? "default" : "outline"} 
+                    size="sm" 
+                    onClick={() => applyFormatting('alignment', 'text-left')}
+                    className="rounded-r-none"
+                  >
+                    <AlignLeft className="h-4 w-4" />
+                  </Button>
                   
+                  <Button 
+                    variant={activeTextFormat.alignment === 'text-center' ? "default" : "outline"} 
+                    size="sm" 
+                    onClick={() => applyFormatting('alignment', 'text-center')}
+                    className="rounded-none border-x-0"
+                  >
+                    <AlignCenter className="h-4 w-4" />
+                  </Button>
+                  
+                  <Button 
+                    variant={activeTextFormat.alignment === 'text-right' ? "default" : "outline"} 
+                    size="sm" 
+                    onClick={() => applyFormatting('alignment', 'text-right')}
+                    className="rounded-l-none"
+                  >
+                    <AlignRight className="h-4 w-4" />
+                  </Button>
+                </div>
+                
+                <Popover open={linkPopoverOpen} onOpenChange={setLinkPopoverOpen}>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" size="sm">
+                      <LinkIcon className="h-4 w-4 mr-2" />
+                      Link
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-80">
+                    <div className="space-y-4">
+                      <h3 className="font-medium">Insert Link</h3>
+                      <div className="space-y-2">
+                        <Input
+                          placeholder="Link text"
+                          value={linkText}
+                          onChange={(e) => setLinkText(e.target.value)}
+                        />
+                        <Input
+                          placeholder="URL (e.g., https://example.com)"
+                          value={linkUrl}
+                          onChange={(e) => setLinkUrl(e.target.value)}
+                        />
+                      </div>
+                      <div className="flex justify-end">
+                        <Button size="sm" onClick={insertLink}>Insert</Button>
+                      </div>
+                    </div>
+                  </PopoverContent>
+                </Popover>
+                
+                <Popover open={paperStylePopoverOpen} onOpenChange={setPaperStylePopoverOpen}>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" size="sm">
+                      <Palette className="h-4 w-4 mr-2" />
+                      Paper Style
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-80">
+                    <div className="space-y-4">
+                      <h3 className="font-medium">Paper Style</h3>
+                      
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">Paper</label>
+                        <Select 
+                          value={letterStyle.paperStyle} 
+                          onValueChange={(value) => setLetterStyle(prev => ({ ...prev, paperStyle: value }))}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select paper style" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {paperStyleOptions.map((style) => (
+                              <SelectItem key={style.value} value={style.value}>
+                                {style.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">Border</label>
+                        <Select 
+                          value={letterStyle.borderStyle} 
+                          onValueChange={(value) => setLetterStyle(prev => ({ ...prev, borderStyle: value }))}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select border style" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {borderStyleOptions.map((style) => (
+                              <SelectItem key={style.value} value={style.value}>
+                                {style.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      
+                      <div className={`p-4 rounded-md ${letterStyle.paperStyle} ${letterStyle.borderStyle}`}>
+                        <p className="text-sm">Preview of your paper style</p>
+                      </div>
+                    </div>
+                  </PopoverContent>
+                </Popover>
+              </div>
+              
+              <div className="grid md:grid-cols-2 gap-4">
+                {/* Text editor */}
+                <div>
+                  <label className="text-sm text-muted-foreground mb-2 block">Write your letter here:</label>
                   <Textarea
                     id="letter-content"
+                    ref={textareaRef}
                     placeholder="Dear friend,&#10;&#10;Write your letter here..."
                     value={content}
                     onChange={(e) => setContent(e.target.value)}
-                    className={letterContentClasses}
+                    className="min-h-[300px] leading-relaxed resize-none"
                   />
-                </CardContent>
+                </div>
                 
-                <CardFooter className="flex justify-between border-t border-border pt-4">
-                  <div className="flex items-center text-sm text-muted-foreground">
-                    {isSaving ? (
-                      <span className="flex items-center">
-                        <Clock className="mr-1 h-4 w-4 animate-pulse" />
-                        Saving...
-                      </span>
-                    ) : lastSaved ? (
-                      <span className="flex items-center">
-                        <Clock className="mr-1 h-4 w-4" />
-                        {formatLastSaved()}
-                      </span>
-                    ) : null}
+                {/* Live preview */}
+                <div>
+                  <label className="text-sm text-muted-foreground mb-2 block">Preview:</label>
+                  <div className={`border rounded-md p-4 min-h-[300px] ${letterStyle.paperStyle} ${letterStyle.borderStyle} overflow-auto`}>
+                    {renderStyledContent()}
                   </div>
-                  
-                  <div className="flex gap-3">
-                    <Button variant="outline" size="sm">
-                      <Paperclip className="mr-2 h-4 w-4" />
-                      Attach
-                    </Button>
-                    <Button variant="outline" size="sm" onClick={handleAutoSave}>
-                      <Save className="mr-2 h-4 w-4" />
-                      Save
-                    </Button>
-                    <Button size="sm" onClick={handleSend}>
-                      <Send className="mr-2 h-4 w-4" />
-                      Send
-                    </Button>
-                  </div>
-                </CardFooter>
-              </Card>
-            </TabsContent>
-          </Tabs>
+                </div>
+              </div>
+            </CardContent>
+            
+            <CardFooter className="flex justify-between border-t border-border pt-4">
+              <div className="flex items-center text-sm text-muted-foreground">
+                {isSaving ? (
+                  <span className="flex items-center">
+                    <Clock className="mr-1 h-4 w-4 animate-pulse" />
+                    Saving...
+                  </span>
+                ) : lastSaved ? (
+                  <span className="flex items-center">
+                    <Clock className="mr-1 h-4 w-4" />
+                    {formatLastSaved()}
+                  </span>
+                ) : null}
+              </div>
+              
+              <div className="flex gap-3">
+                <Button variant="outline" size="sm">
+                  <Paperclip className="mr-2 h-4 w-4" />
+                  Attach
+                </Button>
+                <Button variant="outline" size="sm" onClick={handleAutoSave}>
+                  <Save className="mr-2 h-4 w-4" />
+                  Save
+                </Button>
+                <Button size="sm" onClick={handleSend}>
+                  <Send className="mr-2 h-4 w-4" />
+                  Send
+                </Button>
+              </div>
+            </CardFooter>
+          </Card>
         </div>
       </main>
     </div>
