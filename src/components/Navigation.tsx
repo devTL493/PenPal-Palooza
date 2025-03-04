@@ -5,7 +5,6 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { 
   Inbox, 
-  PenTool, 
   User, 
   Menu, 
   Users, 
@@ -37,7 +36,6 @@ const Navigation = () => {
   const navItems = [
     { name: 'Home', path: '/', icon: <Home className="h-4 w-4" /> },
     { name: 'Inbox', path: '/dashboard', icon: <Inbox className="h-4 w-4" /> },
-    { name: 'Compose', path: '/compose', icon: <PenTool className="h-4 w-4" /> },
     { name: 'Pen Pals', path: '/penpals', icon: <Users className="h-4 w-4" /> },
     { name: 'Profile', path: '/profile', icon: <User className="h-4 w-4" /> },
   ];

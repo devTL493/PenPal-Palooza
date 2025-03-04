@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -11,7 +10,7 @@ import {
 import { Input } from "@/components/ui/input";
 import LetterCard from '@/components/LetterCard';
 import Navigation from '@/components/Navigation';
-import { PenTool, Search, Inbox, Send, Mail, Plus } from 'lucide-react';
+import { PenTool, Search, Inbox, Send, Mail } from 'lucide-react';
 
 // Sample data
 const inboxLetters = [
@@ -97,15 +96,6 @@ const Dashboard = () => {
         <div className="max-w-4xl mx-auto">
           <div className="flex items-center justify-between mb-8">
             <h1 className="text-3xl font-serif font-medium">Your Letters</h1>
-            
-            <div className="flex gap-2">
-              <Link to="/compose">
-                <Button>
-                  <PenTool className="mr-2 h-4 w-4" />
-                  Compose
-                </Button>
-              </Link>
-            </div>
           </div>
           
           <div className="relative mb-6">

@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -14,9 +13,11 @@ import {
   Mail, 
   MessagesSquare,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  PenTool
 } from 'lucide-react';
 import Navigation from '@/components/Navigation';
+import ComposeLetterButton from '@/components/letter/ComposeLetterButton';
 
 // Sample data (in a real app, this would come from a database or API)
 const inboxLetters = [
@@ -168,6 +169,9 @@ const LetterDetail = () => {
       </div>
     );
   }
+
+  // Create a link to compose with this letter's sender as recipient
+  const composeUrl = `/compose?${conversation ? `conversation=${id}` : ''}${letter.sender ? `&recipient=${letter.id}&name=${encodeURIComponent(letter.sender.name)}` : ''}`;
 
   return (
     <div className="min-h-screen bg-background">
@@ -324,10 +328,10 @@ const LetterDetail = () => {
                 }
               </Button>
               
-              <Link to="/compose">
+              <Link to={composeUrl}>
                 <Button>
-                  <Reply className="mr-2 h-4 w-4" />
-                  Write a Letter
+                  <PenTool className="mr-2 h-4 w-4" />
+                  Compose a Letter
                 </Button>
               </Link>
             </div>
