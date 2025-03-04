@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -143,6 +144,7 @@ const LetterDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [showConversation, setShowConversation] = useState(false);
+  const [collapsedLetters, setCollapsedLetters] = useState<{ [key: string]: boolean }>({});
   
   // Find the letter with the matching ID
   const letter = allLetters.find(letter => letter.id === id);
@@ -169,6 +171,15 @@ const LetterDetail = () => {
       </div>
     );
   }
+
+  // Toggle collapse state for a specific letter
+  const toggleLetterCollapse = (letterId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setCollapsedLetters(prev => ({
+      ...prev,
+      [letterId]: !prev[letterId]
+    }));
+  };
 
   // Create a link to compose with this letter's sender as recipient
   const composeUrl = `/compose?${conversation ? `conversation=${id}` : ''}${letter.sender ? `&recipient=${letter.id}&name=${encodeURIComponent(letter.sender.name)}` : ''}`;
@@ -280,7 +291,7 @@ const LetterDetail = () => {
                     )}
                     
                     <div className="flex-1">
-                      <div className={`flex ${historyLetter.sender.isYou ? "justify-end" : "justify-between"}`}>
+                      <div className={`flex justify-between items-center ${historyLetter.sender.isYou ? "flex-row-reverse" : "flex-row"}`}>
                         <h3 className="font-medium font-serif flex items-center">
                           {historyLetter.sender.isYou && (
                             <Badge variant="default" className="mr-2">
@@ -289,16 +300,33 @@ const LetterDetail = () => {
                           )}
                           {historyLetter.sender.name}
                         </h3>
-                        <span className={`text-sm text-muted-foreground ${historyLetter.sender.isYou ? "mr-2" : "ml-2"}`}>
-                          {historyLetter.date}
-                        </span>
+                        <div className="flex items-center">
+                          <span className="text-sm text-muted-foreground mr-2">
+                            {historyLetter.date}
+                          </span>
+                          {/* Add toggle button for expanding/collapsing */}
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="p-0 h-6 w-6"
+                            onClick={(e) => toggleLetterCollapse(historyLetter.id, e)}
+                          >
+                            {collapsedLetters[historyLetter.id] ? 
+                              <ChevronDown className="h-4 w-4" /> : 
+                              <ChevronUp className="h-4 w-4" />
+                            }
+                          </Button>
+                        </div>
                       </div>
                       
-                      <div className={`mt-2 text-sm whitespace-pre-line font-serif ${
-                        historyLetter.sender.isYou ? "text-right" : "text-left"
-                      }`}>
-                        {historyLetter.content}
-                      </div>
+                      {/* Show content only if not collapsed */}
+                      {!collapsedLetters[historyLetter.id] && (
+                        <div className={`mt-2 text-sm whitespace-pre-line font-serif ${
+                          historyLetter.sender.isYou ? "text-right" : "text-left"
+                        }`}>
+                          {historyLetter.content}
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -328,12 +356,13 @@ const LetterDetail = () => {
                 }
               </Button>
               
-              <Link to={composeUrl}>
-                <Button>
-                  <PenTool className="mr-2 h-4 w-4" />
-                  Compose a Letter
-                </Button>
-              </Link>
+              <ComposeLetterButton
+                recipientId={letter.id}
+                recipientName={letter.sender.name}
+              >
+                <PenTool className="mr-2 h-4 w-4" />
+                Compose a Letter
+              </ComposeLetterButton>
             </div>
           </div>
         </div>

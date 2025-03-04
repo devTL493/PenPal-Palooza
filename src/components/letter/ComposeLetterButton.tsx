@@ -10,6 +10,7 @@ interface ComposeLetterButtonProps extends ButtonProps {
   className?: string;
   variant?: "default" | "destructive" | "outline" | "secondary" | "ghost" | "link";
   size?: "default" | "sm" | "lg" | "icon";
+  children?: React.ReactNode;
 }
 
 const ComposeLetterButton: React.FC<ComposeLetterButtonProps> = ({
@@ -18,6 +19,7 @@ const ComposeLetterButton: React.FC<ComposeLetterButtonProps> = ({
   className,
   variant = "default",
   size = "default",
+  children,
   ...props
 }) => {
   // Create URL with query parameters for recipient if provided
@@ -33,8 +35,12 @@ const ComposeLetterButton: React.FC<ComposeLetterButtonProps> = ({
         className={className}
         {...props}
       >
-        <PenTool className="mr-2 h-4 w-4" />
-        Compose a Letter
+        {children || (
+          <>
+            <PenTool className="mr-2 h-4 w-4" />
+            Compose a Letter
+          </>
+        )}
       </Button>
     </Link>
   );

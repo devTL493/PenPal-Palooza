@@ -1,4 +1,4 @@
-
+<lov-code>
 import React, { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useToast } from "@/hooks/use-toast";
@@ -456,19 +456,22 @@ const Compose = () => {
     }
   };
 
-  // Handler for quote insertions
-  const handleInsertQuote = (quoteText: string) => {
+  // Handle quote insertions with metadata
+  const handleInsertQuote = (quoteText: string, metadata: { sender: string, date: string }) => {
     if (textareaRef.current) {
       const cursorPos = textareaRef.current.selectionStart;
       const textBefore = content.substring(0, cursorPos);
       const textAfter = content.substring(cursorPos);
       
+      // Format the quote with special styling and metadata
+      const formattedQuote = `\n\n<blockquote data-sender="${metadata.sender}" data-date="${metadata.date}">\n${quoteText}\n</blockquote>\n\n`;
+      
       // Insert quote at cursor position
-      const newContent = textBefore + quoteText + textAfter;
+      const newContent = textBefore + formattedQuote + textAfter;
       setContent(newContent);
       
       // Adjust inline styles after the insertion point
-      const quoteLength = quoteText.length;
+      const quoteLength = formattedQuote.length;
       setInlineStyles(prev => 
         prev.map(style => {
           if (style.start >= cursorPos) {
@@ -493,7 +496,7 @@ const Compose = () => {
     }
   };
 
-  // Function to render the styled content for preview
+  // Function to render the styled content for preview (modified to handle quotes)
   const renderStyledContent = () => {
     if (!content) return <p className="text-gray-400">Your letter will appear here...</p>;
     
@@ -501,19 +504,85 @@ const Compose = () => {
     let result = [];
     let lastIndex = 0;
     
+    // Parse blockquotes for styling
+    const quoteRegex = /<blockquote data-sender="([^"]*)" data-date="([^"]*)">\n([\s\S]*?)\n<\/blockquote>/g;
+    let match;
+    let plainTextContent = content;
+    let quoteMatches = [];
+    
+    // Extract all quotes and their metadata
+    while ((match = quoteRegex.exec(content)) !== null) {
+      quoteMatches.push({
+        fullMatch: match[0],
+        sender: match[1],
+        date: match[2],
+        text: match[3],
+        index: match.index
+      });
+    }
+    
     // Sort styles by start position
     const sortedStyles = [...inlineStyles].sort((a, b) => a.start - b.start);
     
+    // First, handle regular styling
     for (let i = 0; i < sortedStyles.length; i++) {
       const style = sortedStyles[i];
       
       // Add text before this style if needed
       if (style.start > lastIndex) {
-        result.push(
-          <span key={`plain-${lastIndex}`} className={`${documentStyle.font} ${documentStyle.size} ${documentStyle.color}`}>
-            {content.substring(lastIndex, style.start)}
-          </span>
-        );
+        const textSegment = content.substring(lastIndex, style.start);
+        
+        // Check if this segment contains quotes
+        let segmentLastIndex = 0;
+        let segmentResult = [];
+        
+        for (const quote of quoteMatches) {
+          if (quote.index >= lastIndex && quote.index < style.start) {
+            // Add text before the quote
+            if (quote.index > lastIndex + segmentLastIndex) {
+              segmentResult.push(
+                content.substring(lastIndex + segmentLastIndex, quote.index)
+              );
+            }
+            
+            // Add the styled quote
+            segmentResult.push(
+              <div 
+                key={`quote-${quote.index}`} 
+                className="my-4 p-4 bg-gray-800/10 border-l-4 border-gray-400 rounded italic relative group"
+              >
+                <p>{quote.text}</p>
+                <div className="opacity-0 group-hover:opacity-100 transition-opacity absolute top-0 right-0 bg-black/70 text-white text-xs p-2 rounded pointer-events-none">
+                  <p>{quote.sender} wrote on {quote.date}</p>
+                </div>
+              </div>
+            );
+            
+            segmentLastIndex = (quote.index - lastIndex) + quote.fullMatch.length;
+          }
+        }
+        
+        // Add any remaining text
+        if (segmentLastIndex < style.start - lastIndex) {
+          segmentResult.push(
+            content.substring(lastIndex + segmentLastIndex, style.start)
+          );
+        }
+        
+        // If we processed quotes, add the segments; otherwise, add the whole text
+        if (segmentResult.length > 0) {
+          result.push(
+            <span key={`plain-${lastIndex}`} className={`${documentStyle.font} ${documentStyle.size} ${documentStyle.color}`}>
+              {segmentResult}
+            </span>
+          );
+        } else {
+          result.push(
+            <span key={`plain-${lastIndex}`} className={`${documentStyle.font} ${documentStyle.size} ${documentStyle.color}`}>
+              {textSegment}
+            </span>
+          );
+        }
       }
       
       // Create the styled span
@@ -554,32 +623,62 @@ const Compose = () => {
     
     // Add any remaining text after the last style
     if (lastIndex < content.length) {
-      result.push(
-        <span key={`plain-end`} className={`${documentStyle.font} ${documentStyle.size} ${documentStyle.color}`}>
-          {content.substring(lastIndex)}
-        </span>
-      );
+      const remainingText = content.substring(lastIndex);
+      
+      // Check for quotes in the remaining text
+      let segmentLastIndex = 0;
+      let segmentResult = [];
+      
+      for (const quote of quoteMatches) {
+        if (quote.index >= lastIndex) {
+          // Add text before the quote
+          if (quote.index > lastIndex + segmentLastIndex) {
+            segmentResult.push(
+              remainingText.substring(segmentLastIndex, quote.index - lastIndex)
+            );
+          }
+          
+          // Add the styled quote
+          segmentResult.push(
+            <div 
+              key={`quote-${quote.index}`}
+              className="my-4 p-4 bg-gray-800/10 border-l-4 border-gray-400 rounded italic relative group"
+            >
+              <p>{quote.text}</p>
+              <div className="opacity-0 group-hover:opacity-100 transition-opacity absolute top-0 right-0 bg-black/70 text-white text-xs p-2 rounded pointer-events-none">
+                <p>{quote.sender} wrote on {quote.date}</p>
+              </div>
+            </div>
+          );
+          
+          segmentLastIndex = (quote.index - lastIndex) + quote.fullMatch.length;
+        }
+      }
+      
+      // Add any remaining text
+      if (segmentLastIndex < remainingText.length) {
+        segmentResult.push(
+          remainingText.substring(segmentLastIndex)
+        );
+      }
+      
+      // If we processed quotes, add the segments; otherwise, add the whole text
+      if (segmentResult.length > 0) {
+        result.push(
+          <span key={`plain-end`} className={`${documentStyle.font} ${documentStyle.size} ${documentStyle.color}`}>
+            {segmentResult}
+          </span>
+        );
+      } else {
+        result.push(
+          <span key={`plain-end`} className={`${documentStyle.font} ${documentStyle.size} ${documentStyle.color}`}>
+            {remainingText}
+          </span>
+        );
+      }
     }
     
     return <div className={`${documentStyle.alignment} whitespace-pre-wrap`}>{result}</div>;
-  };
-
-  // Generate combined class string for the letter card
-  const letterCardClasses = `
-    paper 
-    ${letterStyle.paperStyle} 
-    ${letterStyle.borderStyle}
-  `;
-
-  // Handle view mode changes
-  const handleViewModeChange = (newMode: ComposeViewMode) => {
-    if (newMode === 'new-tab' && viewMode !== 'new-tab') {
-      // Open in new tab with parameters
-      const url = `/compose?${searchParams.toString()}&mode=new-tab`;
-      window.open(url, '_blank');
-      return;
-    }
-    setViewMode(newMode);
   };
 
   return (
@@ -611,7 +710,7 @@ const Compose = () => {
                         key={msg.id}
                         className={`p-4 rounded-md border ${msg.sender.isYou ? 'bg-secondary/20 ml-4' : 'bg-muted/10 mr-4'}`}
                       >
-                        <div className="flex justify-between items-start mb-2">
+                        <div className="flex justify-between items-start mb-2 cursor-pointer">
                           <span className="font-medium">{msg.sender.name}</span>
                           <span className="text-xs text-muted-foreground">{msg.date}</span>
                         </div>
@@ -783,178 +882,3 @@ const Compose = () => {
                         size="sm" 
                         onClick={() => applyFormatting('alignment', 'text-right')}
                         className="rounded-l-none"
-                      >
-                        <AlignRight className="h-4 w-4" />
-                      </Button>
-                    </div>
-                    
-                    <Popover open={linkPopoverOpen} onOpenChange={setLinkPopoverOpen}>
-                      <PopoverTrigger asChild>
-                        <Button variant="outline" size="sm">
-                          <LinkIcon className="h-4 w-4 mr-2" />
-                          Link
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-80">
-                        <div className="space-y-4">
-                          <h3 className="font-medium">Insert Link</h3>
-                          <div className="space-y-2">
-                            <Input
-                              placeholder="Link text"
-                              value={linkText}
-                              onChange={(e) => setLinkText(e.target.value)}
-                            />
-                            <Input
-                              placeholder="URL (e.g., https://example.com)"
-                              value={linkUrl}
-                              onChange={(e) => setLinkUrl(e.target.value)}
-                            />
-                          </div>
-                          <div className="flex justify-end">
-                            <Button size="sm" onClick={insertLink}>Insert</Button>
-                          </div>
-                        </div>
-                      </PopoverContent>
-                    </Popover>
-                    
-                    <Popover open={paperStylePopoverOpen} onOpenChange={setPaperStylePopoverOpen}>
-                      <PopoverTrigger asChild>
-                        <Button variant="outline" size="sm">
-                          <Palette className="h-4 w-4 mr-2" />
-                          Paper Style
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-80">
-                        <div className="space-y-4">
-                          <h3 className="font-medium">Paper Style</h3>
-                          
-                          <div className="space-y-2">
-                            <label className="text-sm font-medium">Paper</label>
-                            <Select 
-                              value={letterStyle.paperStyle} 
-                              onValueChange={(value) => setLetterStyle(prev => ({ ...prev, paperStyle: value }))}
-                            >
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select paper style" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {paperStyleOptions.map((style) => (
-                                  <SelectItem key={style.value} value={style.value}>
-                                    {style.label}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          
-                          <div className="space-y-2">
-                            <label className="text-sm font-medium">Border</label>
-                            <Select 
-                              value={letterStyle.borderStyle} 
-                              onValueChange={(value) => setLetterStyle(prev => ({ ...prev, borderStyle: value }))}
-                            >
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select border style" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {borderStyleOptions.map((style) => (
-                                  <SelectItem key={style.value} value={style.value}>
-                                    {style.label}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          
-                          <div className={`p-4 rounded-md ${letterStyle.paperStyle} ${letterStyle.borderStyle}`}>
-                            <p className="text-sm">Preview of your paper style</p>
-                          </div>
-                        </div>
-                      </PopoverContent>
-                    </Popover>
-                    
-                    {/* Show quote button only if there's a conversation */}
-                    {conversation.length > 0 && (
-                      <QuoteSelection 
-                        conversation={conversation}
-                        onQuoteSelected={handleInsertQuote}
-                      />
-                    )}
-                  </div>
-                  
-                  <div className={`${viewMode === 'side-by-side' ? '' : 'grid md:grid-cols-2 gap-4'}`}>
-                    {/* Text editor */}
-                    <div>
-                      <label className="text-sm text-muted-foreground mb-2 block">Write your letter here:</label>
-                      <Textarea
-                        id="letter-content"
-                        ref={textareaRef}
-                        placeholder="Dear friend,&#10;&#10;Write your letter here..."
-                        value={content}
-                        onChange={(e) => setContent(e.target.value)}
-                        className="min-h-[300px] leading-relaxed resize-none"
-                      />
-                    </div>
-                    
-                    {/* Live preview */}
-                    {viewMode !== 'side-by-side' && (
-                      <div>
-                        <label className="text-sm text-muted-foreground mb-2 block">Preview:</label>
-                        <div className={`border rounded-md p-4 min-h-[300px] ${letterStyle.paperStyle} ${letterStyle.borderStyle} overflow-auto`}>
-                          {renderStyledContent()}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                  
-                  {/* Preview in side-by-side mode */}
-                  {viewMode === 'side-by-side' && (
-                    <div className="mt-4">
-                      <label className="text-sm text-muted-foreground mb-2 block">Preview:</label>
-                      <div className={`border rounded-md p-4 min-h-[200px] ${letterStyle.paperStyle} ${letterStyle.borderStyle} overflow-auto`}>
-                        {renderStyledContent()}
-                      </div>
-                    </div>
-                  )}
-                </CardContent>
-                
-                <CardFooter className="flex justify-between border-t border-border pt-4">
-                  <div className="flex items-center text-sm text-muted-foreground">
-                    {isSaving ? (
-                      <span className="flex items-center">
-                        <Clock className="mr-1 h-4 w-4 animate-pulse" />
-                        Saving...
-                      </span>
-                    ) : lastSaved ? (
-                      <span className="flex items-center">
-                        <Clock className="mr-1 h-4 w-4" />
-                        {formatLastSaved()}
-                      </span>
-                    ) : null}
-                  </div>
-                  
-                  <div className="flex gap-3">
-                    <Button variant="outline" size="sm">
-                      <Paperclip className="mr-2 h-4 w-4" />
-                      Attach
-                    </Button>
-                    <Button variant="outline" size="sm" onClick={handleAutoSave}>
-                      <Save className="mr-2 h-4 w-4" />
-                      Save
-                    </Button>
-                    <Button size="sm" onClick={handleSend}>
-                      <Send className="mr-2 h-4 w-4" />
-                      Send
-                    </Button>
-                  </div>
-                </CardFooter>
-              </Card>
-            </div>
-          </div>
-        </div>
-      </main>
-    </div>
-  );
-};
-
-export default Compose;
