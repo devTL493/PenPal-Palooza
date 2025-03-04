@@ -279,7 +279,7 @@ const LetterDetail = () => {
                       <div className={`flex ${historyLetter.sender.isYou ? "justify-end" : "justify-between"}`}>
                         <h3 className="font-medium font-serif flex items-center">
                           {historyLetter.sender.isYou && (
-                            <Badge variant="primary" className="mr-2">
+                            <Badge variant="default" className="mr-2">
                               You
                             </Badge>
                           )}
