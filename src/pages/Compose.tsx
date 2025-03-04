@@ -26,6 +26,12 @@ import PaperStyleSelector from '@/components/letter/PaperStyleSelector';
 import LetterPreview from '@/components/letter/LetterPreview';
 import ConversationHistory from '@/components/letter/ConversationHistory';
 import QuoteSelection from '@/components/letter/QuoteSelection';
+import { 
+  TextAlignment, 
+  InlineStyle, 
+  LetterStyle, 
+  DocumentStyle 
+} from '@/types/letter';
 
 // Sample pen pals for the demo
 const samplePenPals = [
@@ -56,28 +62,6 @@ const sampleConversation = [
   }
 ];
 
-// Type for alignment
-type TextAlignment = 'text-left' | 'text-center' | 'text-right';
-
-export interface InlineStyle {
-  start: number;
-  end: number;
-  font?: string;
-  size?: string;
-  color?: string;
-  isBold?: boolean;
-  isItalic?: boolean;
-  isUnderline?: boolean;
-  alignment?: TextAlignment;
-  isLink?: boolean;
-  linkUrl?: string;
-}
-
-export interface LetterStyle {
-  paperStyle: string;
-  borderStyle: string;
-}
-
 const Compose = () => {
   const { toast } = useToast();
   const [searchParams] = useSearchParams();
@@ -96,11 +80,11 @@ const Compose = () => {
   const [conversationId, setConversationId] = useState<string | null>(null);
   
   // Style for the whole document (default styling)
-  const [documentStyle, setDocumentStyle] = useState({
+  const [documentStyle, setDocumentStyle] = useState<DocumentStyle>({
     font: 'font-serif',
     size: 'text-lg',
     color: 'text-black',
-    alignment: 'text-left' as TextAlignment,
+    alignment: 'text-left',
   });
   
   // Inline styling for specific text selections
