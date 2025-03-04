@@ -1,4 +1,4 @@
-<lov-code>
+
 import React, { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useToast } from "@/hooks/use-toast";
@@ -19,9 +19,12 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import Navigation from '@/components/Navigation';
-import { Send, Paperclip, Save, Clock, Type, Palette, Link as LinkIcon, Bold, Italic, Underline, AlignLeft, AlignCenter, AlignRight, X } from 'lucide-react';
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Send, Paperclip, Save, Clock } from 'lucide-react';
 import ComposeViewOption, { ComposeViewMode } from '@/components/letter/ComposeViewOption';
+import TextFormatToolbar from '@/components/letter/TextFormatToolbar';
+import PaperStyleSelector from '@/components/letter/PaperStyleSelector';
+import LetterPreview from '@/components/letter/LetterPreview';
+import ConversationHistory from '@/components/letter/ConversationHistory';
 import QuoteSelection from '@/components/letter/QuoteSelection';
 
 // Sample pen pals for the demo
@@ -30,60 +33,6 @@ const samplePenPals = [
   { id: '2', name: 'Marcus Johnson' },
   { id: '3', name: 'Sophia Williams' },
   { id: '4', name: 'David Kim' },
-];
-
-// Font options
-const fontOptions = [
-  { value: 'font-serif', label: 'Serif' },
-  { value: 'font-sans', label: 'Sans Serif' },
-  { value: 'font-mono', label: 'Monospace' },
-  { value: 'font-serif italic', label: 'Serif Italic' },
-  { value: 'font-sans italic', label: 'Sans Serif Italic' },
-];
-
-// Font size options
-const fontSizeOptions = [
-  { value: 'text-sm', label: 'Small' },
-  { value: 'text-base', label: 'Medium' },
-  { value: 'text-lg', label: 'Large' },
-  { value: 'text-xl', label: 'Extra Large' },
-  { value: 'text-2xl', label: 'Double Extra Large' },
-];
-
-// Text color options
-const colorOptions = [
-  { value: 'text-black', label: 'Black', color: '#000000' },
-  { value: 'text-blue-600', label: 'Blue', color: '#2563eb' },
-  { value: 'text-green-600', label: 'Green', color: '#059669' },
-  { value: 'text-red-600', label: 'Red', color: '#dc2626' },
-  { value: 'text-purple-600', label: 'Purple', color: '#9333ea' },
-  { value: 'text-amber-600', label: 'Amber', color: '#d97706' },
-  { value: 'text-pink-600', label: 'Pink', color: '#db2777' },
-  { value: 'text-gray-600', label: 'Gray', color: '#4b5563' },
-];
-
-// Paper style options
-const paperStyleOptions = [
-  { value: 'bg-paper', label: 'Classic Cream', description: 'Traditional cream-colored paper' },
-  { value: 'bg-white', label: 'Bright White', description: 'Clean, bright white paper' },
-  { value: 'bg-blue-50', label: 'Cool Blue', description: 'Subtle blue-tinted paper' },
-  { value: 'bg-amber-50', label: 'Warm Amber', description: 'Warm, amber-tinted paper' },
-  { value: 'bg-green-50', label: 'Sage Green', description: 'Soft sage green paper' },
-  { value: 'bg-pink-50', label: 'Blush Pink', description: 'Light blush pink paper' },
-  { value: 'bg-purple-50', label: 'Lavender', description: 'Gentle lavender-tinted paper' },
-  { value: 'bg-gradient-to-r from-amber-50 to-yellow-50', label: 'Sunset Gradient', description: 'Warm gradient effect' },
-  { value: 'bg-gradient-to-r from-blue-50 to-purple-50', label: 'Ocean Gradient', description: 'Cool blue to purple gradient' },
-];
-
-// Border style options
-const borderStyleOptions = [
-  { value: 'border-none', label: 'None', description: 'No border' },
-  { value: 'border border-gray-200', label: 'Simple', description: 'Simple thin border' },
-  { value: 'border-2 border-gray-300', label: 'Bold', description: 'Bold border' },
-  { value: 'border border-dashed border-gray-300', label: 'Dashed', description: 'Dashed border style' },
-  { value: 'border border-dotted border-gray-300', label: 'Dotted', description: 'Dotted border style' },
-  { value: 'border-2 border-double border-gray-300', label: 'Double', description: 'Double-line border' },
-  { value: 'border-2 border-gray-300 rounded-lg', label: 'Rounded', description: 'Rounded corners with border' },
 ];
 
 // Conversation sample data for demo
@@ -110,7 +59,7 @@ const sampleConversation = [
 // Type for alignment
 type TextAlignment = 'text-left' | 'text-center' | 'text-right';
 
-interface InlineStyle {
+export interface InlineStyle {
   start: number;
   end: number;
   font?: string;
@@ -124,7 +73,7 @@ interface InlineStyle {
   linkUrl?: string;
 }
 
-interface LetterStyle {
+export interface LetterStyle {
   paperStyle: string;
   borderStyle: string;
 }
@@ -141,7 +90,7 @@ const Compose = () => {
   const [isFormatToolbarOpen, setIsFormatToolbarOpen] = useState(false);
   const [selectionRange, setSelectionRange] = useState<{start: number, end: number} | null>(null);
   
-  // View mode state (new)
+  // View mode state
   const [viewMode, setViewMode] = useState<ComposeViewMode>('overlay');
   const [conversation, setConversation] = useState<any[]>([]);
   const [conversationId, setConversationId] = useState<string | null>(null);
@@ -355,6 +304,10 @@ const Compose = () => {
     }
   };
 
+  const handleViewModeChange = (mode: ComposeViewMode) => {
+    setViewMode(mode);
+  };
+
   const handleSend = () => {
     if (!recipient) {
       toast({
@@ -496,190 +449,8 @@ const Compose = () => {
     }
   };
 
-  // Function to render the styled content for preview (modified to handle quotes)
-  const renderStyledContent = () => {
-    if (!content) return <p className="text-gray-400">Your letter will appear here...</p>;
-    
-    // Create spans with appropriate styling
-    let result = [];
-    let lastIndex = 0;
-    
-    // Parse blockquotes for styling
-    const quoteRegex = /<blockquote data-sender="([^"]*)" data-date="([^"]*)">\n([\s\S]*?)\n<\/blockquote>/g;
-    let match;
-    let plainTextContent = content;
-    let quoteMatches = [];
-    
-    // Extract all quotes and their metadata
-    while ((match = quoteRegex.exec(content)) !== null) {
-      quoteMatches.push({
-        fullMatch: match[0],
-        sender: match[1],
-        date: match[2],
-        text: match[3],
-        index: match.index
-      });
-    }
-    
-    // Sort styles by start position
-    const sortedStyles = [...inlineStyles].sort((a, b) => a.start - b.start);
-    
-    // First, handle regular styling
-    for (let i = 0; i < sortedStyles.length; i++) {
-      const style = sortedStyles[i];
-      
-      // Add text before this style if needed
-      if (style.start > lastIndex) {
-        const textSegment = content.substring(lastIndex, style.start);
-        
-        // Check if this segment contains quotes
-        let segmentLastIndex = 0;
-        let segmentResult = [];
-        
-        for (const quote of quoteMatches) {
-          if (quote.index >= lastIndex && quote.index < style.start) {
-            // Add text before the quote
-            if (quote.index > lastIndex + segmentLastIndex) {
-              segmentResult.push(
-                content.substring(lastIndex + segmentLastIndex, quote.index)
-              );
-            }
-            
-            // Add the styled quote
-            segmentResult.push(
-              <div 
-                key={`quote-${quote.index}`} 
-                className="my-4 p-4 bg-gray-800/10 border-l-4 border-gray-400 rounded italic relative group"
-              >
-                <p>{quote.text}</p>
-                <div className="opacity-0 group-hover:opacity-100 transition-opacity absolute top-0 right-0 bg-black/70 text-white text-xs p-2 rounded pointer-events-none">
-                  <p>{quote.sender} wrote on {quote.date}</p>
-                </div>
-              </div>
-            );
-            
-            segmentLastIndex = (quote.index - lastIndex) + quote.fullMatch.length;
-          }
-        }
-        
-        // Add any remaining text
-        if (segmentLastIndex < style.start - lastIndex) {
-          segmentResult.push(
-            content.substring(lastIndex + segmentLastIndex, style.start)
-          );
-        }
-        
-        // If we processed quotes, add the segments; otherwise, add the whole text
-        if (segmentResult.length > 0) {
-          result.push(
-            <span key={`plain-${lastIndex}`} className={`${documentStyle.font} ${documentStyle.size} ${documentStyle.color}`}>
-              {segmentResult}
-            </span>
-          );
-        } else {
-          result.push(
-            <span key={`plain-${lastIndex}`} className={`${documentStyle.font} ${documentStyle.size} ${documentStyle.color}`}>
-              {textSegment}
-            </span>
-          );
-        }
-      }
-      
-      // Create the styled span
-      const spanClasses = `
-        ${style.font || documentStyle.font}
-        ${style.size || documentStyle.size}
-        ${style.color || documentStyle.color}
-        ${style.isBold ? 'font-bold' : ''}
-        ${style.isItalic ? 'italic' : ''}
-        ${style.isUnderline ? 'underline' : ''}
-        ${style.isLink ? 'cursor-pointer' : ''}
-      `;
-      
-      const styledText = content.substring(style.start, style.end);
-      
-      if (style.isLink) {
-        result.push(
-          <a 
-            key={`styled-${style.start}-${style.end}`} 
-            href={style.linkUrl} 
-            target="_blank" 
-            rel="noopener noreferrer"
-            className={spanClasses}
-          >
-            {styledText}
-          </a>
-        );
-      } else {
-        result.push(
-          <span key={`styled-${style.start}-${style.end}`} className={spanClasses}>
-            {styledText}
-          </span>
-        );
-      }
-      
-      lastIndex = style.end;
-    }
-    
-    // Add any remaining text after the last style
-    if (lastIndex < content.length) {
-      const remainingText = content.substring(lastIndex);
-      
-      // Check for quotes in the remaining text
-      let segmentLastIndex = 0;
-      let segmentResult = [];
-      
-      for (const quote of quoteMatches) {
-        if (quote.index >= lastIndex) {
-          // Add text before the quote
-          if (quote.index > lastIndex + segmentLastIndex) {
-            segmentResult.push(
-              remainingText.substring(segmentLastIndex, quote.index - lastIndex)
-            );
-          }
-          
-          // Add the styled quote
-          segmentResult.push(
-            <div 
-              key={`quote-${quote.index}`}
-              className="my-4 p-4 bg-gray-800/10 border-l-4 border-gray-400 rounded italic relative group"
-            >
-              <p>{quote.text}</p>
-              <div className="opacity-0 group-hover:opacity-100 transition-opacity absolute top-0 right-0 bg-black/70 text-white text-xs p-2 rounded pointer-events-none">
-                <p>{quote.sender} wrote on {quote.date}</p>
-              </div>
-            </div>
-          );
-          
-          segmentLastIndex = (quote.index - lastIndex) + quote.fullMatch.length;
-        }
-      }
-      
-      // Add any remaining text
-      if (segmentLastIndex < remainingText.length) {
-        segmentResult.push(
-          remainingText.substring(segmentLastIndex)
-        );
-      }
-      
-      // If we processed quotes, add the segments; otherwise, add the whole text
-      if (segmentResult.length > 0) {
-        result.push(
-          <span key={`plain-end`} className={`${documentStyle.font} ${documentStyle.size} ${documentStyle.color}`}>
-            {segmentResult}
-          </span>
-        );
-      } else {
-        result.push(
-          <span key={`plain-end`} className={`${documentStyle.font} ${documentStyle.size} ${documentStyle.color}`}>
-            {remainingText}
-          </span>
-        );
-      }
-    }
-    
-    return <div className={`${documentStyle.alignment} whitespace-pre-wrap`}>{result}</div>;
-  };
+  // Calculate letter card classes based on styling
+  const letterCardClasses = `${letterStyle.paperStyle} ${letterStyle.borderStyle}`;
 
   return (
     <div className="min-h-screen bg-background">
@@ -701,25 +472,7 @@ const Compose = () => {
           <div className={`${viewMode === 'side-by-side' && shouldShowConversation ? 'grid grid-cols-1 md:grid-cols-2 gap-4' : ''}`}>
             {/* Conversation Column (only in side-by-side mode) */}
             {viewMode === 'side-by-side' && shouldShowConversation && (
-              <div className="space-y-4">
-                <h2 className="text-lg font-medium font-serif">Conversation History</h2>
-                <div className="h-[700px] overflow-y-auto border rounded-md p-4">
-                  <div className="space-y-4">
-                    {conversation.map((msg) => (
-                      <div 
-                        key={msg.id}
-                        className={`p-4 rounded-md border ${msg.sender.isYou ? 'bg-secondary/20 ml-4' : 'bg-muted/10 mr-4'}`}
-                      >
-                        <div className="flex justify-between items-start mb-2 cursor-pointer">
-                          <span className="font-medium">{msg.sender.name}</span>
-                          <span className="text-xs text-muted-foreground">{msg.date}</span>
-                        </div>
-                        <p className="whitespace-pre-line text-sm">{msg.content}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
+              <ConversationHistory conversation={conversation} />
             )}
             
             {/* Compose Column */}
@@ -757,128 +510,98 @@ const Compose = () => {
                 <CardContent className="pt-6">
                   <div className="mb-4 flex flex-wrap items-center gap-2 border-b pb-3">
                     {/* Formatting toolbar */}
-                    <Popover open={stylePopoverOpen} onOpenChange={setStylePopoverOpen}>
-                      <PopoverTrigger asChild>
-                        <Button variant="outline" size="sm">
-                          <Type className="h-4 w-4 mr-2" />
-                          Text Style
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-80">
-                        <div className="space-y-4">
-                          <h3 className="font-medium">Text Styling</h3>
-                          
-                          <div className="space-y-2">
-                            <label className="text-sm font-medium">Font</label>
-                            <Select 
-                              value={activeTextFormat.font} 
-                              onValueChange={(value) => applyFormatting('font', value)}
-                            >
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select font" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {fontOptions.map((font) => (
-                                  <SelectItem key={font.value} value={font.value} className={font.value}>
-                                    {font.label}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          
-                          <div className="space-y-2">
-                            <label className="text-sm font-medium">Size</label>
-                            <Select 
-                              value={activeTextFormat.size} 
-                              onValueChange={(value) => applyFormatting('size', value)}
-                            >
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select size" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {fontSizeOptions.map((size) => (
-                                  <SelectItem key={size.value} value={size.value}>
-                                    {size.label}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          
-                          <div className="space-y-2">
-                            <label className="text-sm font-medium">Color</label>
-                            <Select 
-                              value={activeTextFormat.color} 
-                              onValueChange={(value) => applyFormatting('color', value)}
-                            >
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select color" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {colorOptions.map((color) => (
-                                  <SelectItem key={color.value} value={color.value}>
-                                    <div className="flex items-center">
-                                      <div 
-                                        className="w-4 h-4 mr-2 rounded-full" 
-                                        style={{backgroundColor: color.color}}
-                                      />
-                                      {color.label}
-                                    </div>
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-                        </div>
-                      </PopoverContent>
-                    </Popover>
+                    <TextFormatToolbar 
+                      selectionRange={selectionRange}
+                      activeTextFormat={activeTextFormat}
+                      applyFormatting={applyFormatting}
+                      insertLink={insertLink}
+                      linkText={linkText}
+                      setLinkText={setLinkText}
+                      linkUrl={linkUrl}
+                      setLinkUrl={setLinkUrl}
+                      linkPopoverOpen={linkPopoverOpen}
+                      setLinkPopoverOpen={setLinkPopoverOpen}
+                      stylePopoverOpen={stylePopoverOpen}
+                      setStylePopoverOpen={setStylePopoverOpen}
+                    />
                     
-                    <Button 
-                      variant={activeTextFormat.isBold ? "default" : "outline"} 
-                      size="sm" 
-                      onClick={() => applyFormatting('bold', null)}
-                    >
-                      <Bold className="h-4 w-4" />
+                    {/* Paper Style */}
+                    <PaperStyleSelector
+                      letterStyle={letterStyle}
+                      setLetterStyle={setLetterStyle}
+                      paperStylePopoverOpen={paperStylePopoverOpen}
+                      setPaperStylePopoverOpen={setPaperStylePopoverOpen}
+                    />
+                    
+                    {/* Quote selection (only in side-by-side or overlay modes) */}
+                    {shouldShowConversation && (
+                      <QuoteSelection 
+                        conversation={conversation}
+                        onQuoteSelected={handleInsertQuote}
+                      />
+                    )}
+                  </div>
+                  
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div className="min-h-[400px]">
+                      <Textarea
+                        ref={textareaRef}
+                        placeholder="Write your letter here..."
+                        value={content}
+                        onChange={(e) => setContent(e.target.value)}
+                        className="min-h-[400px] w-full resize-none font-serif"
+                      />
+                    </div>
+                    
+                    <div className="min-h-[400px] border rounded-md p-4 overflow-y-auto">
+                      <LetterPreview 
+                        content={content} 
+                        documentStyle={documentStyle}
+                        inlineStyles={inlineStyles}
+                      />
+                    </div>
+                  </div>
+                </CardContent>
+                
+                <CardFooter className="flex justify-between border-t pt-4">
+                  <div className="flex items-center gap-2">
+                    <Button variant="outline" size="sm" onClick={handleAutoSave}>
+                      <Save className="h-4 w-4 mr-1" />
+                      Save
                     </Button>
                     
-                    <Button 
-                      variant={activeTextFormat.isItalic ? "default" : "outline"} 
-                      size="sm" 
-                      onClick={() => applyFormatting('italic', null)}
-                    >
-                      <Italic className="h-4 w-4" />
+                    <span className="text-xs text-muted-foreground">
+                      {isSaving ? 'Saving...' : formatLastSaved()}
+                    </span>
+                  </div>
+                  
+                  <div className="flex items-center gap-2">
+                    <Button variant="outline" size="sm">
+                      <Paperclip className="h-4 w-4 mr-1" />
+                      Attach
                     </Button>
                     
-                    <Button 
-                      variant={activeTextFormat.isUnderline ? "default" : "outline"} 
-                      size="sm" 
-                      onClick={() => applyFormatting('underline', null)}
-                    >
-                      <Underline className="h-4 w-4" />
+                    <Button onClick={handleSend}>
+                      <Send className="h-4 w-4 mr-1" />
+                      Send Letter
                     </Button>
-                    
-                    <div className="flex h-full">
-                      <Button 
-                        variant={activeTextFormat.alignment === 'text-left' ? "default" : "outline"} 
-                        size="sm" 
-                        onClick={() => applyFormatting('alignment', 'text-left')}
-                        className="rounded-r-none"
-                      >
-                        <AlignLeft className="h-4 w-4" />
-                      </Button>
-                      
-                      <Button 
-                        variant={activeTextFormat.alignment === 'text-center' ? "default" : "outline"} 
-                        size="sm" 
-                        onClick={() => applyFormatting('alignment', 'text-center')}
-                        className="rounded-none border-x-0"
-                      >
-                        <AlignCenter className="h-4 w-4" />
-                      </Button>
-                      
-                      <Button 
-                        variant={activeTextFormat.alignment === 'text-right' ? "default" : "outline"} 
-                        size="sm" 
-                        onClick={() => applyFormatting('alignment', 'text-right')}
-                        className="rounded-l-none"
+                  </div>
+                </CardFooter>
+              </Card>
+              
+              {/* Overlay mode conversation display */}
+              {viewMode === 'overlay' && shouldShowConversation && (
+                <div className="mt-6">
+                  <h2 className="text-lg font-medium font-serif mb-2">Conversation History</h2>
+                  <ConversationHistory conversation={conversation} />
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  );
+};
+
+export default Compose;
