@@ -1,3 +1,4 @@
+<lov-code>
 import React, { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useToast } from "@/hooks/use-toast";
@@ -901,4 +902,4 @@ const Compose = () => {
                         onClick={() => applyFormatting('alignment', 'text-center')}
                         className="rounded-none border-x-0"
                       >
-                        <AlignCenter className="h-4
+                        <AlignCenter className="
