@@ -9,6 +9,11 @@ import ComposeLetterButton from '@/components/letter/ComposeLetterButton';
 import CollapsibleMessage from '@/components/letter/CollapsibleMessage';
 import ConversationHistory from '@/components/letter/ConversationHistory';
 import { useToast } from "@/hooks/use-toast";
+import LetterHeader from '@/components/letter/LetterHeader';
+import LetterContent from '@/components/letter/LetterContent';
+import LetterActions from '@/components/letter/LetterActions';
+import NotFoundMessage from '@/components/letter/NotFoundMessage';
+import HighlightStyles from '@/components/letter/HighlightStyles';
 
 // Sample data (in a real app, this would come from a database or API)
 const inboxLetters = [{
@@ -129,10 +134,8 @@ const LetterDetail = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [showConversation, setShowConversation] = useState(false);
-  const [collapsedLetters, setCollapsedLetters] = useState<{
-    [key: string]: boolean;
-  }>({});
   const [isFavorite, setIsFavorite] = useState(false);
+  const [activeQuoteId, setActiveQuoteId] = useState<string | null>(null);
 
   // Find the letter with the matching ID
   const letter = allLetters.find(letter => letter.id === id);
@@ -142,30 +145,15 @@ const LetterDetail = () => {
 
   // Handle case where letter is not found
   if (!letter) {
-    return <div className="min-h-screen bg-background">
+    return (
+      <div className="min-h-screen bg-background">
         <Navigation />
         <main className="container mx-auto px-4 pt-24 pb-16">
-          <div className="max-w-3xl mx-auto text-center">
-            <Mail className="h-12 w-12 mx-auto text-muted-foreground opacity-50" />
-            <h1 className="mt-4 text-2xl font-medium">Letter not found</h1>
-            <p className="mt-2 text-muted-foreground">The letter you're looking for doesn't exist or has been removed.</p>
-            <Button onClick={() => navigate(-1)} className="mt-4">
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Go Back
-            </Button>
-          </div>
+          <NotFoundMessage />
         </main>
-      </div>;
+      </div>
+    );
   }
-
-  // Toggle collapse state for a specific letter
-  const toggleLetterCollapse = (letterId: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    setCollapsedLetters(prev => ({
-      ...prev,
-      [letterId]: !prev[letterId]
-    }));
-  };
 
   // Toggle favorite status
   const toggleFavorite = () => {
@@ -176,7 +164,7 @@ const LetterDetail = () => {
     });
   };
 
-  // Scroll to a specific element in the conversation history
+  // Scroll to a specific quote in the conversation history
   const scrollToQuote = (quoteId: string) => {
     // First ensure conversation is shown
     setShowConversation(true);
@@ -196,59 +184,27 @@ const LetterDetail = () => {
       }
     }, 100);
   };
-
-  // Create a link to compose with this letter's sender as recipient
-  const composeUrl = `/compose?${conversation ? `conversation=${id}` : ''}${letter.sender ? `&recipient=${letter.id}&name=${encodeURIComponent(letter.sender.name)}` : ''}`;
   
-  return <div className="min-h-screen bg-background">
+  return (
+    <div className="min-h-screen bg-background">
       <Navigation />
       
       <main className="container mx-auto px-4 pt-24 pb-16">
         <div className="max-w-3xl mx-auto">
-          {/* Letter Header */}
-          <div className="mb-6">
-            <Button variant="ghost" onClick={() => navigate('/dashboard')} className="mb-4">
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Inbox
-            </Button>
-            
-            <div className="flex items-start justify-between">
-              <div className="flex gap-4">
-                {letter.sender.avatar ? <Avatar className="h-12 w-12 border border-border">
-                    <AvatarImage src={letter.sender.avatar} alt={letter.sender.name} />
-                    <AvatarFallback>{letter.sender.name.charAt(0)}</AvatarFallback>
-                  </Avatar> : <Avatar className="h-12 w-12 bg-primary/10 text-primary">
-                    <AvatarFallback>{letter.sender.name.charAt(0)}</AvatarFallback>
-                  </Avatar>}
-                
-                <div>
-                  <h1 className="text-2xl font-serif font-medium">{letter.sender.name}</h1>
-                  <div className="flex items-center mt-1 text-sm text-muted-foreground">
-                    <Calendar className="h-4 w-4 mr-1" />
-                    <span>{letter.date || letter.timestamp}</span>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="flex gap-2">
-                <Button 
-                  variant="outline" 
-                  size="icon" 
-                  onClick={toggleFavorite}
-                  className={isFavorite ? "text-rose-500" : ""}
-                >
-                  {isFavorite ? <Heart className="h-4 w-4 fill-rose-500" /> : <Heart className="h-4 w-4" />}
-                </Button>
-                
-                {letter.hasAttachments && <Badge variant="outline" className="flex items-center gap-1">
-                    <Paperclip className="h-3 w-3" />
-                    Attachments
-                  </Badge>}
-              </div>
-            </div>
-          </div>
+          {/* Back Button */}
+          <Button variant="ghost" onClick={() => navigate('/dashboard')} className="mb-4">
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back to Inbox
+          </Button>
           
-          {/* Use ConversationHistory component */}
+          {/* Letter Header Component */}
+          <LetterHeader 
+            letter={letter} 
+            isFavorite={isFavorite} 
+            toggleFavorite={toggleFavorite} 
+          />
+          
+          {/* Conversation History Component */}
           {conversation && conversation.length > 1 && (
             <ConversationHistory 
               conversation={conversation} 
@@ -257,37 +213,24 @@ const LetterDetail = () => {
             />
           )}
           
-          {/* Letter Content (when not showing conversation) */}
-          {!showConversation && <div className="paper p-8 border rounded-md mb-6 whitespace-pre-line font-serif">
-              {letter.content || letter.preview}
-            </div>}
+          {/* Letter Content Component */}
+          <LetterContent 
+            content={letter.content} 
+            preview={letter.preview}
+            showContent={!showConversation}
+          />
           
-          {/* Action Buttons */}
-          <div className="flex justify-between">
-            <div />
-            
-            <div>
-              <ComposeLetterButton recipientId={letter.id} recipientName={letter.sender.name}>
-                <PenTool className="mr-2 h-4 w-4" />
-                Compose a Letter
-              </ComposeLetterButton>
-            </div>
-          </div>
+          {/* Letter Actions Component */}
+          <LetterActions 
+            letterId={letter.id} 
+            senderName={letter.sender.name}
+          />
         </div>
       </main>
       
-      <style>{`
-        @keyframes highlight-pulse {
-          0% { background-color: rgba(59, 130, 246, 0.1); }
-          50% { background-color: rgba(59, 130, 246, 0.3); }
-          100% { background-color: rgba(59, 130, 246, 0.1); }
-        }
-        
-        .highlight-pulse {
-          animation: highlight-pulse 1s ease-in-out 2;
-        }
-      `}</style>
-    </div>;
+      <HighlightStyles />
+    </div>
+  );
 };
 
 export default LetterDetail;

@@ -8,7 +8,6 @@ import {
   Clock, 
   Mail, 
   Heart,
-  HeartOff,
   Paperclip,
 } from 'lucide-react';
 
