@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { InlineStyle } from '@/pages/Compose';
+import { InlineStyle } from '@/types/letter';
 
 interface LetterPreviewProps {
   content: string;

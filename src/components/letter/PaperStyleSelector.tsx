@@ -13,7 +13,7 @@ import {
   TabsTrigger
 } from "@/components/ui/tabs";
 import { Palette } from 'lucide-react';
-import { LetterStyle } from '@/pages/Compose';
+import { LetterStyle } from '@/types/letter';
 import { cn } from '@/lib/utils';
 
 // Paper style options
