@@ -187,8 +187,7 @@ const Compose = () => {
   // Used for styling the letter card
   const letterCardClasses = `overflow-hidden ${letterStyle.paperStyle} ${letterStyle.borderStyle}`;
 
-  // Check if we should show the conversation (only in overlay or side-by-side modes)
-  const shouldShowConversation = viewMode !== 'new-tab' && conversation.length > 0;
+
 
   // Process query parameters for pre-filled data
   useEffect(() => {
