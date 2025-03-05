@@ -1,4 +1,4 @@
-<lov-code>
+
 import React, { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useToast } from "@/hooks/use-toast";
@@ -902,4 +902,186 @@ const Compose = () => {
                         onClick={() => applyFormatting('alignment', 'text-center')}
                         className="rounded-none border-x-0"
                       >
-                        <AlignCenter className="
+                        <AlignCenter className="h-4 w-4" />
+                      </Button>
+                      
+                      <Button 
+                        variant={activeTextFormat.alignment === 'text-right' ? "default" : "outline"} 
+                        size="sm" 
+                        onClick={() => applyFormatting('alignment', 'text-right')}
+                        className="rounded-l-none"
+                      >
+                        <AlignRight className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    
+                    <Popover open={linkPopoverOpen} onOpenChange={setLinkPopoverOpen}>
+                      <PopoverTrigger asChild>
+                        <Button variant="outline" size="sm">
+                          <LinkIcon className="h-4 w-4 mr-2" />
+                          Link
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-80">
+                        <div className="space-y-4">
+                          <h3 className="font-medium">Insert Link</h3>
+                          
+                          <div className="space-y-2">
+                            <label className="text-sm font-medium">Text</label>
+                            <Input
+                              value={linkText}
+                              onChange={(e) => setLinkText(e.target.value)}
+                              placeholder="Link text"
+                            />
+                          </div>
+                          
+                          <div className="space-y-2">
+                            <label className="text-sm font-medium">URL</label>
+                            <Input
+                              value={linkUrl}
+                              onChange={(e) => setLinkUrl(e.target.value)}
+                              placeholder="https://example.com"
+                            />
+                          </div>
+                          
+                          <Button onClick={insertLink} className="w-full">
+                            Insert Link
+                          </Button>
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+                    
+                    <Popover open={paperStylePopoverOpen} onOpenChange={setPaperStylePopoverOpen}>
+                      <PopoverTrigger asChild>
+                        <Button variant="outline" size="sm">
+                          <Palette className="h-4 w-4 mr-2" />
+                          Paper Style
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-80">
+                        <div className="space-y-4">
+                          <h3 className="font-medium">Paper Styling</h3>
+                          
+                          <div className="space-y-2">
+                            <label className="text-sm font-medium">Paper Style</label>
+                            <Select 
+                              value={letterStyle.paperStyle} 
+                              onValueChange={(value) => updateLetterStyle('paperStyle', value)}
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select paper style" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {paperStyleOptions.map((style) => (
+                                  <SelectItem key={style.value} value={style.value}>
+                                    <div className="flex flex-col">
+                                      <span>{style.label}</span>
+                                      <span className="text-xs text-muted-foreground">{style.description}</span>
+                                    </div>
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          
+                          <div className="space-y-2">
+                            <label className="text-sm font-medium">Border Style</label>
+                            <Select 
+                              value={letterStyle.borderStyle} 
+                              onValueChange={(value) => updateLetterStyle('borderStyle', value)}
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select border style" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {borderStyleOptions.map((style) => (
+                                  <SelectItem key={style.value} value={style.value}>
+                                    <div className="flex flex-col">
+                                      <span>{style.label}</span>
+                                      <span className="text-xs text-muted-foreground">{style.description}</span>
+                                    </div>
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+                    
+                    {conversation.length > 0 && (
+                      <QuoteSelection
+                        conversation={conversation}
+                        onQuoteSelect={handleInsertQuote}
+                      />
+                    )}
+                  </div>
+                  
+                  <div className="space-y-4">
+                    <Textarea
+                      ref={textareaRef}
+                      placeholder="Write your letter here..."
+                      value={content}
+                      onChange={(e) => setContent(e.target.value)}
+                      className="min-h-[300px] resize-y font-serif"
+                    />
+                    
+                    <div className="rounded-md border border-border p-4 min-h-[200px]">
+                      <h3 className="text-sm font-medium mb-2">Preview</h3>
+                      <div className="p-4">
+                        {renderStyledContent()}
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+                
+                <CardFooter className="border-t border-border justify-between">
+                  <div className="flex items-center gap-2">
+                    <Button variant="ghost" size="sm" disabled>
+                      <Paperclip className="h-4 w-4 mr-2" />
+                      Attach
+                    </Button>
+                    
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={handleAutoSave}
+                      disabled={isSaving}
+                    >
+                      {isSaving ? (
+                        <>
+                          <Clock className="h-4 w-4 mr-2 animate-spin" />
+                          Saving...
+                        </>
+                      ) : (
+                        <>
+                          <Save className="h-4 w-4 mr-2" />
+                          Save Draft
+                        </>
+                      )}
+                    </Button>
+                    
+                    {lastSaved && (
+                      <span className="text-xs text-muted-foreground">
+                        {formatLastSaved()}
+                      </span>
+                    )}
+                  </div>
+                  
+                  <div>
+                    <Button onClick={handleSend}>
+                      <Send className="h-4 w-4 mr-2" />
+                      Send Letter
+                    </Button>
+                  </div>
+                </CardFooter>
+              </Card>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  );
+};
+
+export default Compose;
