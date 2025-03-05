@@ -1,12 +1,10 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { cn } from "@/lib/utils";
 import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { motion } from 'framer-motion';
 import { 
   Clock, 
-  Mail, 
   Heart,
   Paperclip,
 } from 'lucide-react';
@@ -37,6 +35,8 @@ const LetterCard: React.FC<LetterCardProps> = ({
   onClick,
   className,
 }) => {
+  const [isHovered, setIsHovered] = useState(false);
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -45,6 +45,8 @@ const LetterCard: React.FC<LetterCardProps> = ({
     >
       <Card 
         onClick={onClick}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
         className={cn(
           "paper w-full cursor-pointer overflow-hidden transition-all duration-300 hover:translate-y-[-2px]",
           isUnread ? "border-primary/20" : "border-border",
@@ -96,15 +98,38 @@ const LetterCard: React.FC<LetterCardProps> = ({
             </div>
           </div>
           
-          <div className="mt-3">
-            <p className="text-sm line-clamp-2 text-foreground/80">{preview}</p>
-          </div>
-          
-          <div className="mt-4 flex items-center justify-between">
-            <Badge variant="secondary" className="text-xs px-2 py-0.5">
-              <Mail className="h-3 w-3 mr-1" />
-              Letter
-            </Badge>
+          <div className="mt-4">
+            <div 
+              className={cn(
+                "letter-preview relative overflow-hidden transition-all duration-500 ease-spring",
+                isHovered ? "letter-open" : "letter-closed"
+              )}
+            >
+              <div className="letter-envelope w-full aspect-[2/1] bg-amber-50 flex items-center justify-center text-amber-900/30 border border-amber-200">
+                <motion.div 
+                  className="letter-icon text-4xl"
+                  animate={{ 
+                    opacity: isHovered ? 0 : 1,
+                    scale: isHovered ? 0.8 : 1
+                  }}
+                  transition={{ duration: 0.3 }}
+                >
+                  ✉
+                </motion.div>
+              </div>
+              
+              <motion.div 
+                className="letter-content p-3 bg-white border border-amber-200 absolute inset-0 origin-bottom"
+                initial={{ scaleY: 0 }}
+                animate={{ 
+                  scaleY: isHovered ? 1 : 0,
+                  opacity: isHovered ? 1 : 0
+                }}
+                transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+              >
+                <p className="text-sm line-clamp-2 text-foreground/80">{preview}</p>
+              </motion.div>
+            </div>
           </div>
         </div>
       </Card>

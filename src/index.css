@@ -122,6 +122,30 @@
   @apply absolute inset-0 bg-gradient-to-r from-paper-light to-paper-dark opacity-60 rounded-md z-[-1];
 }
 
+/* Letter preview animations */
+.letter-preview {
+  min-height: 100px;
+  transform-style: preserve-3d;
+}
+
+.letter-envelope {
+  transform-origin: center bottom;
+  transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.letter-closed .letter-envelope {
+  transform: rotateX(0deg);
+}
+
+.letter-open .letter-envelope {
+  transform: rotateX(-110deg);
+}
+
+.letter-content {
+  transform-origin: top;
+  backface-visibility: hidden;
+}
+
 /* Subtle paper-like texture overlay */
 .texture {
   position: relative;
