@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -10,7 +11,7 @@ import {
 import { Input } from "@/components/ui/input";
 import LetterCard from '@/components/LetterCard';
 import Navigation from '@/components/Navigation';
-import { PenTool, Search, Inbox, Send, Mail } from 'lucide-react';
+import { PenTool, Search, Inbox, Send, Mail, Heart } from 'lucide-react';
 
 // Sample data
 const inboxLetters = [
@@ -43,7 +44,7 @@ const inboxLetters = [
     preview: "I've been thinking about what you wrote regarding the book we're both reading. The character development is indeed fascinating...",
     timestamp: '3 days ago',
     isUnread: false,
-    hasSaved: true,
+    isFavorite: true,
   },
   {
     id: '4',
@@ -78,6 +79,8 @@ const sentLetters = [
     timestamp: '4 days ago',
   },
 ];
+
+const favoriteLetters = inboxLetters.filter(letter => letter.isFavorite);
 
 const Dashboard = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -121,9 +124,9 @@ const Dashboard = () => {
                 <Send className="mr-2 h-4 w-4" />
                 Sent
               </TabsTrigger>
-              <TabsTrigger value="saved" className="flex items-center">
-                <Mail className="mr-2 h-4 w-4" />
-                Saved
+              <TabsTrigger value="favorites" className="flex items-center">
+                <Heart className="mr-2 h-4 w-4" />
+                Favorites
               </TabsTrigger>
             </TabsList>
             
@@ -169,12 +172,22 @@ const Dashboard = () => {
               )}
             </TabsContent>
             
-            <TabsContent value="saved" className="space-y-4">
-              <div className="text-center py-12">
-                <Mail className="h-12 w-12 mx-auto text-muted-foreground opacity-50" />
-                <h3 className="mt-4 text-lg font-medium">No saved letters</h3>
-                <p className="mt-1 text-muted-foreground">Bookmark letters to save them for later.</p>
-              </div>
+            <TabsContent value="favorites" className="space-y-4">
+              {favoriteLetters.length > 0 ? (
+                favoriteLetters.map((letter) => (
+                  <LetterCard
+                    key={letter.id}
+                    {...letter}
+                    onClick={() => handleOpenLetter(letter.id)}
+                  />
+                ))
+              ) : (
+                <div className="text-center py-12">
+                  <Heart className="h-12 w-12 mx-auto text-muted-foreground opacity-50" />
+                  <h3 className="mt-4 text-lg font-medium">No favorite letters</h3>
+                  <p className="mt-1 text-muted-foreground">Mark letters as favorites to save them for later.</p>
+                </div>
+              )}
             </TabsContent>
           </Tabs>
         </div>

@@ -3,10 +3,12 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Reply, Bookmark, BookmarkCheck, Paperclip, Calendar, Mail, MessagesSquare, ChevronDown, ChevronUp, PenTool } from 'lucide-react';
+import { ArrowLeft, Heart, HeartOff, Paperclip, Calendar, Mail, MessagesSquare, ChevronDown, ChevronUp, PenTool } from 'lucide-react';
 import Navigation from '@/components/Navigation';
 import ComposeLetterButton from '@/components/letter/ComposeLetterButton';
 import CollapsibleMessage from '@/components/letter/CollapsibleMessage';
+import ConversationHistory from '@/components/letter/ConversationHistory';
+import { useToast } from "@/hooks/use-toast";
 
 // Sample data (in a real app, this would come from a database or API)
 const inboxLetters = [{
@@ -119,17 +121,18 @@ Emily`,
   // Other conversations would be defined here
 };
 
-// Combine all letters for easier lookup
+// Combine all letters for lookup
 const allLetters = [...inboxLetters, ...sentLetters];
+
 const LetterDetail = () => {
-  const {
-    id
-  } = useParams();
+  const { id } = useParams();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [showConversation, setShowConversation] = useState(false);
   const [collapsedLetters, setCollapsedLetters] = useState<{
     [key: string]: boolean;
   }>({});
+  const [isFavorite, setIsFavorite] = useState(false);
 
   // Find the letter with the matching ID
   const letter = allLetters.find(letter => letter.id === id);
@@ -164,6 +167,15 @@ const LetterDetail = () => {
     }));
   };
 
+  // Toggle favorite status
+  const toggleFavorite = () => {
+    setIsFavorite(!isFavorite);
+    toast({
+      title: isFavorite ? "Removed from favorites" : "Added to favorites",
+      description: isFavorite ? "Letter removed from your favorites" : "Letter added to your favorites"
+    });
+  };
+
   // Scroll to a specific element in the conversation history
   const scrollToQuote = (quoteId: string) => {
     // First ensure conversation is shown
@@ -187,6 +199,7 @@ const LetterDetail = () => {
 
   // Create a link to compose with this letter's sender as recipient
   const composeUrl = `/compose?${conversation ? `conversation=${id}` : ''}${letter.sender ? `&recipient=${letter.id}&name=${encodeURIComponent(letter.sender.name)}` : ''}`;
+  
   return <div className="min-h-screen bg-background">
       <Navigation />
       
@@ -218,6 +231,15 @@ const LetterDetail = () => {
               </div>
               
               <div className="flex gap-2">
+                <Button 
+                  variant="outline" 
+                  size="icon" 
+                  onClick={toggleFavorite}
+                  className={isFavorite ? "text-rose-500" : ""}
+                >
+                  {isFavorite ? <Heart className="h-4 w-4 fill-rose-500" /> : <Heart className="h-4 w-4" />}
+                </Button>
+                
                 {letter.hasAttachments && <Badge variant="outline" className="flex items-center gap-1">
                     <Paperclip className="h-3 w-3" />
                     Attachments
@@ -226,26 +248,14 @@ const LetterDetail = () => {
             </div>
           </div>
           
-          {/* Conversation History Button */}
-          {conversation && conversation.length > 1 && <Button variant="outline" onClick={() => setShowConversation(!showConversation)} className="mb-4 w-full flex justify-between">
-              <span className="flex items-center">
-                <MessagesSquare className="mr-2 h-4 w-4" />
-                {showConversation ? "Hide Conversation History" : "Show Entire Conversation"}
-                <Badge variant="secondary" className="ml-2">
-                  {conversation.length} letters
-                </Badge>
-              </span>
-              {showConversation ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-            </Button>}
-          
-          {/* Conversation History */}
-          {showConversation && conversation && <div className="space-y-6 mb-6">
-              <h2 className="text-lg font-medium font-serif">Conversation History</h2>
-              
-              {conversation.map(historyLetter => <div key={historyLetter.id} id={`letter-${historyLetter.id}`} className={`${historyLetter.sender.isYou ? "ml-auto mr-0 max-w-[85%]" : "ml-0 mr-auto max-w-[85%]"} ${historyLetter.id === id ? "border-primary/50 bg-primary/5" : historyLetter.sender.isYou ? "border-secondary bg-secondary/20" : "border-muted bg-muted/10"} paper border rounded-md p-6`}>
-                  <CollapsibleMessage message={historyLetter} isActive={historyLetter.id === id} />
-                </div>)}
-            </div>}
+          {/* Use ConversationHistory component */}
+          {conversation && conversation.length > 1 && (
+            <ConversationHistory 
+              conversation={conversation} 
+              activeMessageId={id}
+              onScrollToQuote={scrollToQuote}
+            />
+          )}
           
           {/* Letter Content (when not showing conversation) */}
           {!showConversation && <div className="paper p-8 border rounded-md mb-6 whitespace-pre-line font-serif">
@@ -254,13 +264,9 @@ const LetterDetail = () => {
           
           {/* Action Buttons */}
           <div className="flex justify-between">
+            <div />
             
-            
-            <div className="flex gap-2">
-              <Button variant="outline">
-                {letter.hasSaved ? <><BookmarkCheck className="mr-2 h-4 w-4" />Saved</> : <><Bookmark className="mr-2 h-4 w-4" />Save</>}
-              </Button>
-              
+            <div>
               <ComposeLetterButton recipientId={letter.id} recipientName={letter.sender.name}>
                 <PenTool className="mr-2 h-4 w-4" />
                 Compose a Letter
@@ -270,9 +276,7 @@ const LetterDetail = () => {
         </div>
       </main>
       
-      {/* Add CSS for quote highlighting */}
-      <style>
-        {`
+      <style>{`
         @keyframes highlight-pulse {
           0% { background-color: rgba(59, 130, 246, 0.1); }
           50% { background-color: rgba(59, 130, 246, 0.3); }
@@ -282,8 +286,8 @@ const LetterDetail = () => {
         .highlight-pulse {
           animation: highlight-pulse 1s ease-in-out 2;
         }
-        `}
-      </style>
+      `}</style>
     </div>;
 };
+
 export default LetterDetail;

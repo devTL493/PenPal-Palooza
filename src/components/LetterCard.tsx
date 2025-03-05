@@ -7,8 +7,8 @@ import { motion } from 'framer-motion';
 import { 
   Clock, 
   Mail, 
-  Bookmark, 
-  BookmarkCheck,
+  Heart,
+  HeartOff,
   Paperclip,
 } from 'lucide-react';
 
@@ -21,7 +21,7 @@ export interface LetterCardProps {
   preview: string;
   timestamp: string;
   isUnread?: boolean;
-  hasSaved?: boolean;
+  isFavorite?: boolean;
   hasAttachments?: boolean;
   onClick?: () => void;
   className?: string;
@@ -33,7 +33,7 @@ const LetterCard: React.FC<LetterCardProps> = ({
   preview,
   timestamp,
   isUnread = false,
-  hasSaved = false,
+  isFavorite = false,
   hasAttachments = false,
   onClick,
   className,
@@ -85,10 +85,10 @@ const LetterCard: React.FC<LetterCardProps> = ({
                 <Paperclip className="h-4 w-4 text-muted-foreground" />
               )}
               
-              {hasSaved ? (
-                <BookmarkCheck className="h-4 w-4 text-primary" />
+              {isFavorite ? (
+                <Heart className="h-4 w-4 text-rose-500 fill-rose-500" />
               ) : (
-                <Bookmark className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                <Heart className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
               )}
               
               {isUnread && (

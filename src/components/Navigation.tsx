@@ -13,6 +13,9 @@ import {
   Mail
 } from 'lucide-react';
 
+// Sample unread count - in a real app, this would come from context/state
+const unreadCount = 1;
+
 const Navigation = () => {
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
@@ -35,7 +38,19 @@ const Navigation = () => {
 
   const navItems = [
     { name: 'Home', path: '/', icon: <Home className="h-4 w-4" /> },
-    { name: 'Inbox', path: '/dashboard', icon: <Inbox className="h-4 w-4" /> },
+    { 
+      name: 'Inbox', 
+      path: '/dashboard', 
+      icon: <div className="relative">
+              <Inbox className="h-4 w-4" />
+              {unreadCount > 0 && (
+                <span className="absolute -top-1 -right-1 flex h-3 w-3">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-3 w-3 bg-primary"></span>
+                </span>
+              )}
+            </div> 
+    },
     { name: 'Pen Pals', path: '/penpals', icon: <Users className="h-4 w-4" /> },
     { name: 'Profile', path: '/profile', icon: <User className="h-4 w-4" /> },
   ];
@@ -77,6 +92,11 @@ const Navigation = () => {
                 <span className="flex items-center space-x-1.5">
                   {item.icon}
                   <span>{item.name}</span>
+                  {item.name === 'Inbox' && unreadCount > 0 && (
+                    <span className="ml-1 flex items-center justify-center bg-primary text-primary-foreground text-xs rounded-full px-1.5 py-0.5 min-w-[1.25rem]">
+                      {unreadCount}
+                    </span>
+                  )}
                 </span>
               </Link>
             ))}
@@ -121,6 +141,11 @@ const Navigation = () => {
                 <span className="flex items-center space-x-3">
                   {item.icon}
                   <span>{item.name}</span>
+                  {item.name === 'Inbox' && unreadCount > 0 && (
+                    <span className="ml-1 flex items-center justify-center bg-primary text-primary-foreground text-xs rounded-full px-1.5 py-0.5 min-w-[1.25rem]">
+                      {unreadCount}
+                    </span>
+                  )}
                 </span>
               </Link>
             ))}
