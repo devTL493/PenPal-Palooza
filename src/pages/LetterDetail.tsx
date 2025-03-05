@@ -335,7 +335,8 @@ const LetterDetail = () => {
       </main>
       
       {/* Add CSS for quote highlighting */}
-      <style jsx global>{`
+      <style>
+        {`
         @keyframes highlight-pulse {
           0% { background-color: rgba(59, 130, 246, 0.1); }
           50% { background-color: rgba(59, 130, 246, 0.3); }
@@ -345,7 +346,8 @@ const LetterDetail = () => {
         .highlight-pulse {
           animation: highlight-pulse 1s ease-in-out 2;
         }
-      `}</style>
+        `}
+      </style>
     </div>
   );
 };
