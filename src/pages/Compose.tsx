@@ -1,3 +1,7 @@
+<ComposeViewOption
+  currentMode={viewMode}
+  onModeChange={handleViewModeChange}
+/>
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
