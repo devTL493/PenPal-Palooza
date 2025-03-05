@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useToast } from "@/hooks/use-toast";
@@ -23,6 +22,8 @@ import { Send, Paperclip, Save, Clock, Type, Palette, Link as LinkIcon, Bold, It
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import ComposeViewOption, { ComposeViewMode } from '@/components/letter/ComposeViewOption';
 import QuoteSelection from '@/components/letter/QuoteSelection';
+import ConversationHistory from '@/components/letter/ConversationHistory';
+import StyledQuote from '@/components/letter/StyledQuote';
 
 // Sample pen pals for the demo
 const samplePenPals = [
@@ -180,6 +181,7 @@ const Compose = () => {
   const [linkPopoverOpen, setLinkPopoverOpen] = useState(false);
   const [stylePopoverOpen, setStylePopoverOpen] = useState(false);
   const [paperStylePopoverOpen, setPaperStylePopoverOpen] = useState(false);
+  const [activeQuoteId, setActiveQuoteId] = useState<string | null>(null);
 
   // Used for styling the letter card
   const letterCardClasses = `overflow-hidden ${letterStyle.paperStyle} ${letterStyle.borderStyle}`;
@@ -499,6 +501,27 @@ const Compose = () => {
     }
   };
 
+  // Function to handle clicking on a quote to jump to its source
+  const handleQuoteClick = (quoteId: string) => {
+    setActiveQuoteId(quoteId);
+  };
+
+  // Function to scroll to a quote in the conversation history
+  const scrollToQuoteInConversation = (quoteId: string) => {
+    // First, ensure the conversation is visible
+    if (viewMode === 'new-tab') {
+      // In new-tab mode, we might need to go back to the conversation view
+      toast({
+        title: "Cannot scroll to quote",
+        description: "Quotes can only be navigated in overlay or side-by-side view modes.",
+      });
+      return;
+    }
+    
+    // Set the active quote and ensure conversation is expanded
+    setActiveQuoteId(quoteId);
+  };
+
   // Function to handle view mode changes
   const handleViewModeChange = (mode: ComposeViewMode) => {
     setViewMode(mode);
@@ -509,6 +532,12 @@ const Compose = () => {
       url.searchParams.set('mode', 'new-tab');
       window.open(url.toString(), '_blank');
     }
+  };
+
+  // Function to update letter styling
+  const updateLetterStyle = (type: 'paperStyle' | 'borderStyle', value: string) => {
+    setLetterStyle(prev => ({ ...prev, [type]: value }));
+    setPaperStylePopoverOpen(false);
   };
 
   // Function to render the styled content for preview (modified to handle quotes)
@@ -562,15 +591,11 @@ const Compose = () => {
             
             // Add the styled quote
             segmentResult.push(
-              <div 
-                key={`quote-${quote.index}`} 
-                className="my-4 p-4 bg-gray-800/10 border-l-4 border-gray-400 rounded italic relative group"
-              >
-                <p>{quote.text}</p>
-                <div className="opacity-0 group-hover:opacity-100 transition-opacity absolute top-0 right-0 bg-black/70 text-white text-xs p-2 rounded pointer-events-none">
-                  <p>{quote.sender} wrote on {quote.date}</p>
-                </div>
-              </div>
+              <StyledQuote 
+                key={`quote-${quote.index}`}
+                quote={quote}
+                onClick={() => scrollToQuoteInConversation(`quote-${quote.index}`)}
+              />
             );
             
             segmentLastIndex = (quote.index - lastIndex) + quote.fullMatch.length;
@@ -655,15 +680,11 @@ const Compose = () => {
           
           // Add the styled quote
           segmentResult.push(
-            <div 
+            <StyledQuote 
               key={`quote-${quote.index}`}
-              className="my-4 p-4 bg-gray-800/10 border-l-4 border-gray-400 rounded italic relative group"
-            >
-              <p>{quote.text}</p>
-              <div className="opacity-0 group-hover:opacity-100 transition-opacity absolute top-0 right-0 bg-black/70 text-white text-xs p-2 rounded pointer-events-none">
-                <p>{quote.sender} wrote on {quote.date}</p>
-              </div>
-            </div>
+              quote={quote}
+              onClick={() => scrollToQuoteInConversation(`quote-${quote.index}`)}
+            />
           );
           
           segmentLastIndex = (quote.index - lastIndex) + quote.fullMatch.length;
@@ -696,12 +717,6 @@ const Compose = () => {
     return <div className={`${documentStyle.alignment} whitespace-pre-wrap`}>{result}</div>;
   };
 
-  // Function to update letter styling
-  const updateLetterStyle = (type: 'paperStyle' | 'borderStyle', value: string) => {
-    setLetterStyle(prev => ({ ...prev, [type]: value }));
-    setPaperStylePopoverOpen(false);
-  };
-
   return (
     <div className="min-h-screen bg-background">
       <Navigation />
@@ -720,26 +735,17 @@ const Compose = () => {
           </div>
           
           <div className={`${viewMode === 'side-by-side' && shouldShowConversation ? 'grid grid-cols-1 md:grid-cols-2 gap-4' : ''}`}>
-            {/* Conversation Column (only in side-by-side mode) */}
-            {viewMode === 'side-by-side' && shouldShowConversation && (
+            {shouldShowConversation && (
               <div className="space-y-4">
-                <h2 className="text-lg font-medium font-serif">Conversation History</h2>
-                <div className="h-[700px] overflow-y-auto border rounded-md p-4">
-                  <div className="space-y-4">
-                    {conversation.map((msg) => (
-                      <div 
-                        key={msg.id}
-                        className={`p-4 rounded-md border ${msg.sender.isYou ? 'bg-secondary/20 ml-4' : 'bg-muted/10 mr-4'}`}
-                      >
-                        <div className="flex justify-between items-start mb-2 cursor-pointer">
-                          <span className="font-medium">{msg.sender.name}</span>
-                          <span className="text-xs text-muted-foreground">{msg.date}</span>
-                        </div>
-                        <p className="whitespace-pre-line text-sm">{msg.content}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
+                {viewMode === 'side-by-side' && (
+                  <h2 className="text-lg font-medium font-serif">Conversation History</h2>
+                )}
+                
+                <ConversationHistory 
+                  conversation={conversation}
+                  activeMessageId={activeQuoteId}
+                  onScrollToQuote={scrollToQuoteInConversation}
+                />
               </div>
             )}
             
@@ -895,162 +901,4 @@ const Compose = () => {
                         onClick={() => applyFormatting('alignment', 'text-center')}
                         className="rounded-none border-x-0"
                       >
-                        <AlignCenter className="h-4 w-4" />
-                      </Button>
-                      
-                      <Button 
-                        variant={activeTextFormat.alignment === 'text-right' ? "default" : "outline"} 
-                        size="sm" 
-                        onClick={() => applyFormatting('alignment', 'text-right')}
-                        className="rounded-l-none"
-                      >
-                        <AlignRight className="h-4 w-4" />
-                      </Button>
-                    </div>
-                    
-                    <Popover open={linkPopoverOpen} onOpenChange={setLinkPopoverOpen}>
-                      <PopoverTrigger asChild>
-                        <Button variant="outline" size="sm">
-                          <LinkIcon className="h-4 w-4 mr-2" />
-                          Link
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-80">
-                        <div className="space-y-4">
-                          <h3 className="font-medium">Insert Link</h3>
-                          <div className="space-y-2">
-                            <label className="text-sm font-medium">Link Text</label>
-                            <Input 
-                              value={linkText} 
-                              onChange={(e) => setLinkText(e.target.value)}
-                              placeholder="Text to display"
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <label className="text-sm font-medium">URL</label>
-                            <Input 
-                              value={linkUrl} 
-                              onChange={(e) => setLinkUrl(e.target.value)}
-                              placeholder="https://example.com"
-                            />
-                          </div>
-                          <Button className="w-full" onClick={insertLink}>Insert Link</Button>
-                        </div>
-                      </PopoverContent>
-                    </Popover>
-                    
-                    <Popover open={paperStylePopoverOpen} onOpenChange={setPaperStylePopoverOpen}>
-                      <PopoverTrigger asChild>
-                        <Button variant="outline" size="sm">
-                          <Palette className="h-4 w-4 mr-2" />
-                          Paper
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-80">
-                        <div className="space-y-4">
-                          <h3 className="font-medium">Paper Style</h3>
-                          
-                          <div className="space-y-2">
-                            <label className="text-sm font-medium">Paper Color</label>
-                            <div className="grid grid-cols-3 gap-2">
-                              {paperStyleOptions.map((style) => (
-                                <div
-                                  key={style.value}
-                                  className={`cursor-pointer rounded-md p-3 h-16 border transition-all duration-200 ${letterStyle.paperStyle === style.value ? 'ring-2 ring-primary' : 'hover:bg-accent/10'} ${style.value}`}
-                                  onClick={() => updateLetterStyle('paperStyle', style.value)}
-                                  title={style.description}
-                                >
-                                  <div className="text-xs font-medium truncate">{style.label}</div>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                          
-                          <div className="space-y-2">
-                            <label className="text-sm font-medium">Border Style</label>
-                            <div className="grid grid-cols-2 gap-2">
-                              {borderStyleOptions.map((style) => (
-                                <div
-                                  key={style.value}
-                                  className={`cursor-pointer rounded-md p-3 border transition-all duration-200 ${letterStyle.borderStyle === style.value ? 'ring-2 ring-primary' : 'hover:bg-accent/10'} ${style.value}`}
-                                  onClick={() => updateLetterStyle('borderStyle', style.value)}
-                                  title={style.description}
-                                >
-                                  <div className="text-xs font-medium truncate">{style.label}</div>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        </div>
-                      </PopoverContent>
-                    </Popover>
-                    
-                    {conversation.length > 0 && (
-                      <QuoteSelection 
-                        conversation={conversation}
-                        onQuoteSelected={handleInsertQuote}
-                      />
-                    )}
-                  </div>
-                  
-                  <div className="min-h-[300px] space-y-4">
-                    <Textarea
-                      ref={textareaRef}
-                      value={content}
-                      onChange={(e) => setContent(e.target.value)}
-                      placeholder="Write your letter here..."
-                      className="min-h-[200px] resize-y border-0 focus-visible:ring-0 p-0 font-serif"
-                    />
-                    
-                    <div className="border rounded-md p-4 bg-muted/5">
-                      <h3 className="font-medium text-sm mb-2">Preview</h3>
-                      <div className="p-4">
-                        {renderStyledContent()}
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-                
-                <CardFooter className="flex-col sm:flex-row items-stretch sm:items-center gap-4 pt-6">
-                  <div className="flex-1 flex flex-col sm:flex-row items-center gap-2">
-                    {isSaving ? (
-                      <div className="text-xs text-muted-foreground flex items-center">
-                        <Clock className="h-3 w-3 mr-1 animate-spin" />
-                        Saving...
-                      </div>
-                    ) : lastSaved ? (
-                      <div className="text-xs text-muted-foreground">
-                        {formatLastSaved()}
-                      </div>
-                    ) : null}
-                  </div>
-                  
-                  <div className="flex gap-2 w-full sm:w-auto">
-                    <Button 
-                      variant="outline"
-                      className="w-full sm:w-auto"
-                      onClick={handleAutoSave}
-                    >
-                      <Save className="h-4 w-4 mr-2" />
-                      Save
-                    </Button>
-                    
-                    <Button 
-                      className="w-full sm:w-auto"
-                      onClick={handleSend}
-                    >
-                      <Send className="h-4 w-4 mr-2" />
-                      Send
-                    </Button>
-                  </div>
-                </CardFooter>
-              </Card>
-            </div>
-          </div>
-        </div>
-      </main>
-    </div>
-  );
-};
-
-export default Compose;
+                        <AlignCenter className="h-4

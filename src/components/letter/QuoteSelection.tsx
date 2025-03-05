@@ -7,6 +7,7 @@ import {
 } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import { MessageSquareQuote } from 'lucide-react';
+import CollapsibleMessage from './CollapsibleMessage';
 
 interface QuoteSelectionProps {
   conversation: Array<{
@@ -87,17 +88,12 @@ const QuoteSelection: React.FC<QuoteSelectionProps> = ({
             <p className="text-sm text-muted-foreground">No messages to quote from.</p>
           ) : (
             conversation.map((message) => (
-              <div 
-                key={message.id} 
-                className={`border rounded-md p-3 hover:bg-accent/10 ${selectedMessageId === message.id ? 'ring-2 ring-primary' : ''}`}
-                onMouseUp={(e) => handleTextSelection(e, message.id)}
-              >
-                <div className="flex justify-between items-start mb-1">
-                  <span className="font-medium text-sm">{message.sender.name}</span>
-                  <span className="text-xs text-muted-foreground">{message.date}</span>
-                </div>
-                <p className="text-sm whitespace-pre-line">{message.content}</p>
-              </div>
+              <CollapsibleMessage 
+                key={message.id}
+                message={message}
+                isActive={selectedMessageId === message.id}
+                onTextSelection={handleTextSelection}
+              />
             ))
           )}
         </div>

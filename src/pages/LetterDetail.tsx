@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -19,6 +18,7 @@ import {
 } from 'lucide-react';
 import Navigation from '@/components/Navigation';
 import ComposeLetterButton from '@/components/letter/ComposeLetterButton';
+import CollapsibleMessage from '@/components/letter/CollapsibleMessage';
 
 // Sample data (in a real app, this would come from a database or API)
 const inboxLetters = [
@@ -181,6 +181,24 @@ const LetterDetail = () => {
     }));
   };
 
+  // Scroll to a specific element in the conversation history
+  const scrollToQuote = (quoteId: string) => {
+    // First ensure conversation is shown
+    setShowConversation(true);
+    
+    // Then scroll to the element
+    setTimeout(() => {
+      const element = document.getElementById(quoteId);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        element.classList.add('highlight-pulse');
+        setTimeout(() => {
+          element.classList.remove('highlight-pulse');
+        }, 2000);
+      }
+    }, 100);
+  };
+
   // Create a link to compose with this letter's sender as recipient
   const composeUrl = `/compose?${conversation ? `conversation=${id}` : ''}${letter.sender ? `&recipient=${letter.id}&name=${encodeURIComponent(letter.sender.name)}` : ''}`;
 
@@ -257,9 +275,10 @@ const LetterDetail = () => {
             <div className="space-y-6 mb-6">
               <h2 className="text-lg font-medium font-serif">Conversation History</h2>
               
-              {conversation.map((historyLetter, index) => (
+              {conversation.map((historyLetter) => (
                 <div 
                   key={historyLetter.id} 
+                  id={`letter-${historyLetter.id}`}
                   className={`${
                     historyLetter.sender.isYou 
                       ? "ml-auto mr-0 max-w-[85%]" 
@@ -272,63 +291,10 @@ const LetterDetail = () => {
                         : "border-muted bg-muted/10"
                   } paper border rounded-md p-6`}
                 >
-                  <div className={`flex items-start gap-4 mb-3 ${
-                    historyLetter.sender.isYou ? "flex-row-reverse text-right" : "flex-row text-left"
-                  }`}>
-                    {historyLetter.sender.avatar ? (
-                      <Avatar className="h-10 w-10 border border-border">
-                        <AvatarImage src={historyLetter.sender.avatar} alt={historyLetter.sender.name} />
-                        <AvatarFallback>{historyLetter.sender.name.charAt(0)}</AvatarFallback>
-                      </Avatar>
-                    ) : (
-                      <Avatar className={`h-10 w-10 ${
-                        historyLetter.sender.isYou 
-                          ? "bg-primary/20 text-primary" 
-                          : "bg-secondary/30 text-foreground"
-                      }`}>
-                        <AvatarFallback>{historyLetter.sender.name.charAt(0)}</AvatarFallback>
-                      </Avatar>
-                    )}
-                    
-                    <div className="flex-1">
-                      <div className={`flex justify-between items-center ${historyLetter.sender.isYou ? "flex-row-reverse" : "flex-row"}`}>
-                        <h3 className="font-medium font-serif flex items-center">
-                          {historyLetter.sender.isYou && (
-                            <Badge variant="default" className="mr-2">
-                              You
-                            </Badge>
-                          )}
-                          {historyLetter.sender.name}
-                        </h3>
-                        <div className="flex items-center">
-                          <span className="text-sm text-muted-foreground mr-2">
-                            {historyLetter.date}
-                          </span>
-                          {/* Add toggle button for expanding/collapsing */}
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            className="p-0 h-6 w-6"
-                            onClick={(e) => toggleLetterCollapse(historyLetter.id, e)}
-                          >
-                            {collapsedLetters[historyLetter.id] ? 
-                              <ChevronDown className="h-4 w-4" /> : 
-                              <ChevronUp className="h-4 w-4" />
-                            }
-                          </Button>
-                        </div>
-                      </div>
-                      
-                      {/* Show content only if not collapsed */}
-                      {!collapsedLetters[historyLetter.id] && (
-                        <div className={`mt-2 text-sm whitespace-pre-line font-serif ${
-                          historyLetter.sender.isYou ? "text-right" : "text-left"
-                        }`}>
-                          {historyLetter.content}
-                        </div>
-                      )}
-                    </div>
-                  </div>
+                  <CollapsibleMessage 
+                    message={historyLetter}
+                    isActive={historyLetter.id === id}
+                  />
                 </div>
               ))}
             </div>
@@ -367,6 +333,19 @@ const LetterDetail = () => {
           </div>
         </div>
       </main>
+      
+      {/* Add CSS for quote highlighting */}
+      <style jsx global>{`
+        @keyframes highlight-pulse {
+          0% { background-color: rgba(59, 130, 246, 0.1); }
+          50% { background-color: rgba(59, 130, 246, 0.3); }
+          100% { background-color: rgba(59, 130, 246, 0.1); }
+        }
+        
+        .highlight-pulse {
+          animation: highlight-pulse 1s ease-in-out 2;
+        }
+      `}</style>
     </div>
   );
 };
