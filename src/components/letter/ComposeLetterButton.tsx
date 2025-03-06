@@ -13,7 +13,6 @@ interface ComposeLetterButtonProps extends ButtonProps {
   children?: React.ReactNode;
   conversation?: boolean;
   position?: 'bottom-right' | 'inline';
-  compact?: boolean;
 }
 
 const ComposeLetterButton: React.FC<ComposeLetterButtonProps> = ({
@@ -25,7 +24,6 @@ const ComposeLetterButton: React.FC<ComposeLetterButtonProps> = ({
   children,
   conversation = false,
   position = 'inline',
-  compact = false,
   ...props
 }) => {
   // Create URL with query parameters for recipient if provided
@@ -38,23 +36,18 @@ const ComposeLetterButton: React.FC<ComposeLetterButtonProps> = ({
     ? 'fixed bottom-6 right-6 shadow-lg rounded-full z-20'
     : '';
 
-  // Apply compact styling for buttons that appear below messages
-  const compactClasses = compact 
-    ? 'text-sm py-1 px-3 h-auto'
-    : '';
-
   return (
     <Link to={composeUrl}>
       <Button 
         variant={variant} 
         size={size}
-        className={`${className} ${positionClassNames} ${compactClasses}`}
+        className={`${className} ${positionClassNames}`}
         {...props}
       >
         {children || (
           <>
-            <PenTool className={`${compact ? 'h-3 w-3' : 'h-4 w-4'} mr-2`} />
-            {compact ? 'Reply' : 'Compose a Letter'}
+            <PenTool className="mr-2 h-4 w-4" />
+            Compose a Letter
           </>
         )}
       </Button>
