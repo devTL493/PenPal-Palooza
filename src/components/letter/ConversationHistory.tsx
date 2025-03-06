@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { 
@@ -159,14 +160,16 @@ const ConversationHistory: React.FC<ConversationHistoryProps> = ({
         </div>
       )}
 
-      {/* Reply button for the conversation */}
+      {/* Reply button for the conversation - now smaller and below the last message */}
       {showComposeButton && lastSender && (
-        <div className="mt-4">
+        <div className="mt-2 flex justify-end">
           <ComposeLetterButton 
             recipientId={lastSender.id} 
             recipientName={lastSender.sender.name} 
-            className="w-full"
+            className="ml-auto"
             conversation={true}
+            compact={true}
+            size="sm"
           />
         </div>
       )}

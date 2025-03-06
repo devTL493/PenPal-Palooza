@@ -118,8 +118,8 @@ const Compose = () => {
   const [content, setContent] = useState('');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   
-  // View mode state
-  const [viewMode, setViewMode] = useState<ComposeViewMode>('overlay');
+  // View mode state - Changed to side-by-side as default
+  const [viewMode, setViewMode] = useState<ComposeViewMode>('side-by-side');
   const [conversation, setConversation] = useState<ConversationMessage[]>([]);
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [isInConversationContext, setIsInConversationContext] = useState(false);
@@ -211,6 +211,7 @@ const Compose = () => {
     if (mode === 'new-tab') {
       setViewMode('new-tab');
     }
+    // Otherwise, the default will be side-by-side as defined in the useState above
 
     // Handle draft parameter
     const draftId = searchParams.get('draft');
@@ -468,7 +469,7 @@ const Compose = () => {
           </div>
           
           <div className={`${viewMode === 'side-by-side' && shouldShowConversation ? 'grid grid-cols-1 md:grid-cols-2 gap-4' : ''}`}>
-            {/* Conversation History Column - Only shown in side-by-side mode or as background in overlay mode */}
+            {/* Conversation History Column */}
             {shouldShowConversation && (viewMode === 'side-by-side' || viewMode === 'overlay') && (
               <div className={`space-y-4 ${viewMode === 'overlay' ? 'absolute inset-0 z-0 opacity-15 pointer-events-none' : ''}`}>
                 {viewMode === 'side-by-side' && (
