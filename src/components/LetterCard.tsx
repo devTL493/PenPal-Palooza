@@ -105,7 +105,7 @@ const LetterCard: React.FC<LetterCardProps> = ({
                 isHovered ? "letter-open" : "letter-closed"
               )}
             >
-              <div className="letter-envelope w-full aspect-[2/1] bg-amber-50 flex items-center justify-center text-amber-900/30 border border-amber-200">
+              <div className="letter-envelope w-full aspect-[3/1] bg-amber-50 flex items-center justify-center text-amber-900/30 border border-amber-200">
                 <motion.div 
                   className="letter-icon text-4xl"
                   animate={{ 

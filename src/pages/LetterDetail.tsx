@@ -136,12 +136,17 @@ const LetterDetail = () => {
   const [showConversation, setShowConversation] = useState(false);
   const [isFavorite, setIsFavorite] = useState(false);
   const [activeQuoteId, setActiveQuoteId] = useState<string | null>(null);
+  
+  // Create a state to store the conversation (in a real app this would be fetched from API)
+  const [currentConversation, setCurrentConversation] = useState(() => {
+    return id && conversations[id] ? [...conversations[id]] : [];
+  });
 
   // Find the letter with the matching ID
   const letter = allLetters.find(letter => letter.id === id);
 
   // Get the conversation if it exists
-  const conversation = id ? conversations[id] : null;
+  const conversation = currentConversation.length > 0 ? currentConversation : null;
 
   // Handle case where letter is not found
   if (!letter) {
@@ -184,6 +189,26 @@ const LetterDetail = () => {
       }
     }, 100);
   };
+
+  // Handle message deletion
+  const handleDeleteMessage = (messageId: string) => {
+    // Remove the message from the conversation
+    setCurrentConversation(prev => prev.filter(msg => msg.id !== messageId));
+    
+    // If the deleted message is the current one, navigate back
+    if (messageId === id) {
+      toast({
+        title: "Letter deleted",
+        description: "The letter has been permanently removed."
+      });
+      navigate('/dashboard');
+    } else {
+      toast({
+        title: "Letter deleted",
+        description: "The letter has been removed from this conversation."
+      });
+    }
+  };
   
   return (
     <div className="min-h-screen bg-background">
@@ -210,6 +235,7 @@ const LetterDetail = () => {
               conversation={conversation} 
               activeMessageId={id}
               onScrollToQuote={scrollToQuote}
+              onDeleteMessage={handleDeleteMessage}
             />
           )}
           

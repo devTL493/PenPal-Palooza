@@ -24,7 +24,7 @@ const ComposeLetterButton: React.FC<ComposeLetterButtonProps> = ({
 }) => {
   // Create URL with query parameters for recipient if provided
   const composeUrl = recipientId 
-    ? `/compose?recipient=${recipientId}${recipientName ? `&name=${encodeURIComponent(recipientName)}` : ''}`
+    ? `/compose?recipient=${recipientId}${recipientName ? `&name=${encodeURIComponent(recipientName)}` : ''}&conversation=true`
     : '/compose';
 
   return (
