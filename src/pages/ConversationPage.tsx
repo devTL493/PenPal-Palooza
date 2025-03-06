@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Trash, AlertTriangle } from 'lucide-react';
 import Navigation from '@/components/Navigation';
 import { useToast } from "@/hooks/use-toast";

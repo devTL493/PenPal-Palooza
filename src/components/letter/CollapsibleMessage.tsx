@@ -18,13 +18,15 @@ interface CollapsibleMessageProps {
   isActive?: boolean;
   isExpanded?: boolean;
   onToggleExpand?: () => void;
+  onTextSelection?: (e: React.MouseEvent, messageId: string) => void;
 }
 
 const CollapsibleMessage: React.FC<CollapsibleMessageProps> = ({
   message,
   isActive = false,
   isExpanded = false,
-  onToggleExpand
+  onToggleExpand,
+  onTextSelection
 }) => {
   const [isOpen, setIsOpen] = useState(isActive);
   const firstInitial = message.sender.name.charAt(0).toUpperCase();
@@ -47,12 +49,20 @@ const CollapsibleMessage: React.FC<CollapsibleMessageProps> = ({
     }
   };
 
+  // Handle text selection events
+  const handleMouseUp = (e: React.MouseEvent) => {
+    if (onTextSelection) {
+      onTextSelection(e, message.id);
+    }
+  };
+
   return (
     <div 
       id={message.id}
       className={`relative border p-4 rounded-md transition-all duration-300 ${
         isActive ? 'ring-2 ring-primary' : ''
       }`}
+      onMouseUp={handleMouseUp}
     >
       <div className="flex justify-between items-start mb-2">
         <div className="flex items-center gap-2">

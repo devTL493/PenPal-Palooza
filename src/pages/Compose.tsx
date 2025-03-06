@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useToast } from "@/hooks/use-toast";
@@ -1041,7 +1040,7 @@ const Compose = () => {
                     {shouldShowConversation && (
                       <QuoteSelection
                         conversation={conversation}
-                        onQuoteSelect={handleInsertQuote}
+                        onQuoteSelected={handleInsertQuote}
                       />
                     )}
                   </div>
