@@ -12,6 +12,7 @@ interface ComposeLetterButtonProps extends ButtonProps {
   size?: "default" | "sm" | "lg" | "icon";
   children?: React.ReactNode;
   conversation?: boolean;
+  position?: 'bottom-right' | 'inline';
 }
 
 const ComposeLetterButton: React.FC<ComposeLetterButtonProps> = ({
@@ -22,6 +23,7 @@ const ComposeLetterButton: React.FC<ComposeLetterButtonProps> = ({
   size = "default",
   children,
   conversation = false,
+  position = 'inline',
   ...props
 }) => {
   // Create URL with query parameters for recipient if provided
@@ -29,12 +31,17 @@ const ComposeLetterButton: React.FC<ComposeLetterButtonProps> = ({
     ? `/compose?recipient=${recipientId}${recipientName ? `&name=${encodeURIComponent(recipientName)}` : ''}${conversation ? '&conversation=true' : ''}`
     : '/compose';
 
+  // Apply fixed position styling for bottom-right button
+  const positionClassNames = position === 'bottom-right' 
+    ? 'fixed bottom-6 right-6 shadow-lg rounded-full z-20'
+    : '';
+
   return (
     <Link to={composeUrl}>
       <Button 
         variant={variant} 
         size={size}
-        className={className}
+        className={`${className} ${positionClassNames}`}
         {...props}
       >
         {children || (

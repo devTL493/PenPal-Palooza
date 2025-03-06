@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { 
@@ -51,7 +50,7 @@ const ConversationHistory: React.FC<ConversationHistoryProps> = ({
   showComposeButton = true,
   expandable = false
 }) => {
-  const [showConversation, setShowConversation] = useState(false);
+  const [showConversation, setShowConversation] = useState(true); // Changed to default true
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const conversationContainerRef = React.useRef<HTMLDivElement>(null);
   const [expandedMessages, setExpandedMessages] = useState<Record<string, boolean>>({});
@@ -139,7 +138,7 @@ const ConversationHistory: React.FC<ConversationHistoryProps> = ({
       {showConversation && (
         <div 
           ref={conversationContainerRef}
-          className={`${expandable ? 'max-h-none' : 'h-[400px]'} overflow-y-auto border rounded-md p-4`}
+          className={`${expandable ? 'max-h-[calc(100vh-200px)]' : 'max-h-[400px]'} overflow-y-auto border rounded-md p-4`}
         >
           <div className="space-y-4">
             {conversation.map((message) => (
@@ -149,7 +148,7 @@ const ConversationHistory: React.FC<ConversationHistoryProps> = ({
                     <CollapsibleMessage 
                       message={message}
                       isActive={message.id === activeMessageId}
-                      isExpanded={expandable && expandedMessages[message.id]}
+                      isExpanded={expandedMessages[message.id]}
                       onToggleExpand={expandable ? () => toggleMessageExpand(message.id) : undefined}
                     />
                   </div>
