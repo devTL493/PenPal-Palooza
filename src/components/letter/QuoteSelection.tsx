@@ -8,17 +8,10 @@ import {
 import { Button } from "@/components/ui/button";
 import { MessageSquareQuote } from 'lucide-react';
 import CollapsibleMessage from './CollapsibleMessage';
+import { ConversationMessage } from '@/types/letter';
 
 interface QuoteSelectionProps {
-  conversation: Array<{
-    id: string;
-    sender: {
-      name: string;
-      isYou?: boolean;
-    };
-    content: string;
-    date: string;
-  }>;
+  conversation: ConversationMessage[];
   onQuoteSelected: (quote: string, metadata: { sender: string, date: string }) => void;
 }
 

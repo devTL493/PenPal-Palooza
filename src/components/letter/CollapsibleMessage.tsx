@@ -3,18 +3,10 @@ import React, { useState } from 'react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { ConversationMessage } from '@/types/letter';
 
 interface CollapsibleMessageProps {
-  message: {
-    id: string;
-    sender: {
-      name: string;
-      avatar?: string;
-      isYou?: boolean;
-    };
-    content: string;
-    date: string;
-  };
+  message: ConversationMessage;
   isActive?: boolean;
   isExpanded?: boolean;
   onToggleExpand?: () => void;
