@@ -1,6 +1,7 @@
 
 import React, { useState } from 'react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 
 interface CollapsibleMessageProps {
@@ -8,64 +9,84 @@ interface CollapsibleMessageProps {
     id: string;
     sender: {
       name: string;
-      isYou?: boolean;
       avatar?: string;
+      isYou?: boolean;
     };
     content: string;
     date: string;
   };
   isActive?: boolean;
-  onTextSelection?: (e: React.MouseEvent, messageId: string) => void;
+  isExpanded?: boolean;
+  onToggleExpand?: () => void;
 }
 
-const CollapsibleMessage: React.FC<CollapsibleMessageProps> = ({ 
-  message, 
+const CollapsibleMessage: React.FC<CollapsibleMessageProps> = ({
+  message,
   isActive = false,
-  onTextSelection
+  isExpanded = false,
+  onToggleExpand
 }) => {
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isOpen, setIsOpen] = useState(isActive);
+  const firstInitial = message.sender.name.charAt(0).toUpperCase();
+  
+  // For shorter previews (under 150 chars), don't truncate
+  const isBrief = message.content.length < 150;
+  const preview = isBrief 
+    ? message.content 
+    : message.content.substring(0, 150) + '...';
 
-  const toggleCollapse = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setIsCollapsed(!isCollapsed);
-  };
-
-  const handleMouseUp = (e: React.MouseEvent) => {
-    if (onTextSelection) {
-      onTextSelection(e, message.id);
+  // If isExpanded is provided (controlled from parent), use that instead of local state
+  const displayState = onToggleExpand ? isExpanded : isOpen;
+  
+  // Use the toggle function from parent if provided, otherwise use local state
+  const toggleOpen = () => {
+    if (onToggleExpand) {
+      onToggleExpand();
+    } else {
+      setIsOpen(!isOpen);
     }
   };
 
   return (
     <div 
-      className={`p-4 rounded-md border ${
-        message.sender.isYou 
-          ? 'bg-secondary/20 ml-4' 
-          : 'bg-muted/10 mr-4'
-      } ${isActive ? 'ring-2 ring-primary' : ''}`}
-      onMouseUp={handleMouseUp}
+      id={message.id}
+      className={`relative border p-4 rounded-md transition-all duration-300 ${
+        isActive ? 'ring-2 ring-primary' : ''
+      }`}
     >
       <div className="flex justify-between items-start mb-2">
-        <span className="font-medium">{message.sender.name}</span>
-        <div className="flex items-center gap-1">
-          <span className="text-xs text-muted-foreground">{message.date}</span>
+        <div className="flex items-center gap-2">
+          <Avatar className="h-8 w-8">
+            {message.sender.avatar && (
+              <AvatarImage src={message.sender.avatar} alt={message.sender.name} />
+            )}
+            <AvatarFallback>{firstInitial}</AvatarFallback>
+          </Avatar>
+          <div>
+            <div className="font-medium">{message.sender.name}</div>
+            <div className="text-xs text-muted-foreground">{message.date}</div>
+          </div>
+        </div>
+        
+        {!isBrief && (
           <Button 
             variant="ghost" 
             size="sm" 
-            className="p-0 h-6 w-6"
-            onClick={toggleCollapse}
+            className="h-7 w-7 p-0" 
+            onClick={toggleOpen}
           >
-            {isCollapsed ? 
-              <ChevronDown className="h-4 w-4" /> : 
+            {displayState ? (
               <ChevronUp className="h-4 w-4" />
-            }
+            ) : (
+              <ChevronDown className="h-4 w-4" />
+            )}
           </Button>
-        </div>
+        )}
       </div>
       
-      {!isCollapsed && (
-        <p className="whitespace-pre-line text-sm">{message.content}</p>
-      )}
+      <div className="whitespace-pre-wrap pl-10">
+        {displayState || isBrief ? message.content : preview}
+      </div>
     </div>
   );
 };

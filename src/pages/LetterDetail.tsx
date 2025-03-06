@@ -1,14 +1,10 @@
 import React, { useState } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Heart, HeartOff, Paperclip, Calendar, Mail, MessagesSquare, ChevronDown, ChevronUp, PenTool } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import Navigation from '@/components/Navigation';
-import ComposeLetterButton from '@/components/letter/ComposeLetterButton';
-import CollapsibleMessage from '@/components/letter/CollapsibleMessage';
-import ConversationHistory from '@/components/letter/ConversationHistory';
 import { useToast } from "@/hooks/use-toast";
+import ConversationHistory from '@/components/letter/ConversationHistory';
 import LetterHeader from '@/components/letter/LetterHeader';
 import LetterContent from '@/components/letter/LetterContent';
 import LetterActions from '@/components/letter/LetterActions';
@@ -133,7 +129,6 @@ const LetterDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [showConversation, setShowConversation] = useState(false);
   const [isFavorite, setIsFavorite] = useState(false);
   const [activeQuoteId, setActiveQuoteId] = useState<string | null>(null);
   
@@ -171,43 +166,16 @@ const LetterDetail = () => {
 
   // Scroll to a specific quote in the conversation history
   const scrollToQuote = (quoteId: string) => {
-    // First ensure conversation is shown
-    setShowConversation(true);
-
-    // Then scroll to the element
-    setTimeout(() => {
-      const element = document.getElementById(quoteId);
-      if (element) {
-        element.scrollIntoView({
-          behavior: 'smooth',
-          block: 'center'
-        });
-        element.classList.add('highlight-pulse');
-        setTimeout(() => {
-          element.classList.remove('highlight-pulse');
-        }, 2000);
-      }
-    }, 100);
+    setActiveQuoteId(quoteId);
   };
 
-  // Handle message deletion
-  const handleDeleteMessage = (messageId: string) => {
-    // Remove the message from the conversation
-    setCurrentConversation(prev => prev.filter(msg => msg.id !== messageId));
-    
-    // If the deleted message is the current one, navigate back
-    if (messageId === id) {
-      toast({
-        title: "Letter deleted",
-        description: "The letter has been permanently removed."
-      });
-      navigate('/dashboard');
-    } else {
-      toast({
-        title: "Letter deleted",
-        description: "The letter has been removed from this conversation."
-      });
-    }
+  // Handle conversation deletion
+  const handleDeleteConversation = () => {
+    toast({
+      title: "Conversation deleted",
+      description: "The entire conversation has been permanently removed."
+    });
+    navigate('/dashboard');
   };
   
   return (
@@ -235,7 +203,7 @@ const LetterDetail = () => {
               conversation={conversation} 
               activeMessageId={id}
               onScrollToQuote={scrollToQuote}
-              onDeleteMessage={handleDeleteMessage}
+              onDeleteConversation={handleDeleteConversation}
             />
           )}
           
@@ -243,7 +211,7 @@ const LetterDetail = () => {
           <LetterContent 
             content={letter.content} 
             preview={letter.preview}
-            showContent={!showConversation}
+            showContent={true}
           />
           
           {/* Letter Actions Component */}

@@ -11,6 +11,7 @@ interface ComposeLetterButtonProps extends ButtonProps {
   variant?: "default" | "destructive" | "outline" | "secondary" | "ghost" | "link";
   size?: "default" | "sm" | "lg" | "icon";
   children?: React.ReactNode;
+  conversation?: boolean;
 }
 
 const ComposeLetterButton: React.FC<ComposeLetterButtonProps> = ({
@@ -20,11 +21,12 @@ const ComposeLetterButton: React.FC<ComposeLetterButtonProps> = ({
   variant = "default",
   size = "default",
   children,
+  conversation = false,
   ...props
 }) => {
   // Create URL with query parameters for recipient if provided
   const composeUrl = recipientId 
-    ? `/compose?recipient=${recipientId}${recipientName ? `&name=${encodeURIComponent(recipientName)}` : ''}&conversation=true`
+    ? `/compose?recipient=${recipientId}${recipientName ? `&name=${encodeURIComponent(recipientName)}` : ''}${conversation ? '&conversation=true' : ''}`
     : '/compose';
 
   return (

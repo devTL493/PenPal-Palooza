@@ -6,7 +6,8 @@ import {
   ChevronUp, 
   ChevronDown, 
   Trash, 
-  AlertTriangle 
+  AlertTriangle,
+  ExternalLink
 } from 'lucide-react';
 import { Badge } from "@/components/ui/badge";
 import CollapsibleMessage from './CollapsibleMessage';
@@ -21,6 +22,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Link } from 'react-router-dom';
 
 interface ConversationHistoryProps {
   conversation: Array<{
@@ -34,19 +36,25 @@ interface ConversationHistoryProps {
   }>;
   activeMessageId?: string;
   onScrollToQuote?: (quoteId: string) => void;
-  onDeleteMessage?: (messageId: string) => void;
+  onDeleteConversation?: () => void;
+  viewMode?: 'side-by-side' | 'overlay' | 'new-tab';
+  showComposeButton?: boolean;
+  expandable?: boolean;
 }
 
 const ConversationHistory: React.FC<ConversationHistoryProps> = ({ 
   conversation,
   activeMessageId,
   onScrollToQuote,
-  onDeleteMessage
+  onDeleteConversation,
+  viewMode = 'overlay',
+  showComposeButton = true,
+  expandable = false
 }) => {
   const [showConversation, setShowConversation] = useState(false);
-  const conversationContainerRef = React.useRef<HTMLDivElement>(null);
-  const [messageToDelete, setMessageToDelete] = useState<string | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const conversationContainerRef = React.useRef<HTMLDivElement>(null);
+  const [expandedMessages, setExpandedMessages] = useState<Record<string, boolean>>({});
 
   // Scroll to a specific quote ID
   const scrollToQuote = (quoteId: string) => {
@@ -68,17 +76,18 @@ const ConversationHistory: React.FC<ConversationHistoryProps> = ({
     }
   };
 
-  const handleDelete = (messageId: string) => {
-    setMessageToDelete(messageId);
-    setShowDeleteDialog(true);
-  };
-
   const confirmDelete = () => {
-    if (messageToDelete && onDeleteMessage) {
-      onDeleteMessage(messageToDelete);
+    if (onDeleteConversation) {
+      onDeleteConversation();
     }
     setShowDeleteDialog(false);
-    setMessageToDelete(null);
+  };
+
+  const toggleMessageExpand = (messageId: string) => {
+    setExpandedMessages(prev => ({
+      ...prev,
+      [messageId]: !prev[messageId]
+    }));
   };
 
   if (!conversation || conversation.length === 0) {
@@ -92,55 +101,58 @@ const ConversationHistory: React.FC<ConversationHistoryProps> = ({
 
   return (
     <div className="space-y-4">
-      <Button
-        variant="outline"
-        onClick={() => setShowConversation(!showConversation)}
-        className="w-full flex justify-between"
-      >
-        <span className="flex items-center">
-          <MessagesSquare className="mr-2 h-4 w-4" />
-          {showConversation ? "Hide Conversation History" : "Show Entire Conversation"}
-          <Badge variant="secondary" className="ml-2">
-            {conversation.length} letters
-          </Badge>
-        </span>
-        {showConversation ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-      </Button>
+      <div className="flex items-center justify-between">
+        <Button
+          variant="outline"
+          onClick={() => setShowConversation(!showConversation)}
+          className="flex-1 flex justify-between"
+        >
+          <span className="flex items-center">
+            <MessagesSquare className="mr-2 h-4 w-4" />
+            {showConversation ? "Hide Conversation History" : "Show Conversation History"}
+            <Badge variant="secondary" className="ml-2">
+              {conversation.length} letters
+            </Badge>
+          </span>
+          {showConversation ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+        </Button>
+        
+        <div className="flex items-center gap-2 ml-2">
+          <Link to={`/conversation/${conversation[0]?.id}`} className="flex items-center">
+            <Button variant="outline" size="icon" title="View full conversation history">
+              <ExternalLink className="h-4 w-4" />
+            </Button>
+          </Link>
+          
+          <Button 
+            variant="outline" 
+            size="icon" 
+            className="text-destructive"
+            onClick={() => setShowDeleteDialog(true)}
+            title="Delete entire conversation"
+          >
+            <Trash className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
       
       {showConversation && (
         <div 
           ref={conversationContainerRef}
-          className="h-[400px] overflow-y-auto border rounded-md p-4"
+          className={`${expandable ? 'max-h-none' : 'h-[400px]'} overflow-y-auto border rounded-md p-4`}
         >
           <div className="space-y-4">
             {conversation.map((message) => (
-              <div key={message.id} className="flex justify-between items-start gap-2">
-                <div className="flex-1">
-                  <CollapsibleMessage 
-                    message={message}
-                    isActive={message.id === activeMessageId}
-                  />
-                </div>
-                <div className="flex gap-2 pt-2">
-                  {!message.sender.isYou && (
-                    <ComposeLetterButton 
-                      recipientId={message.id} 
-                      recipientName={message.sender.name} 
-                      variant="ghost" 
-                      size="sm" 
-                      className="h-8 px-2"
-                    >
-                      Reply
-                    </ComposeLetterButton>
-                  )}
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    className="text-destructive h-8 px-2"
-                    onClick={() => handleDelete(message.id)}
-                  >
-                    <Trash className="h-4 w-4" />
-                  </Button>
+              <div key={message.id} className="flex flex-col gap-2">
+                <div className="flex justify-between items-start gap-2">
+                  <div className="flex-1">
+                    <CollapsibleMessage 
+                      message={message}
+                      isActive={message.id === activeMessageId}
+                      isExpanded={expandable && expandedMessages[message.id]}
+                      onToggleExpand={expandable ? () => toggleMessageExpand(message.id) : undefined}
+                    />
+                  </div>
                 </div>
               </div>
             ))}
@@ -149,12 +161,13 @@ const ConversationHistory: React.FC<ConversationHistoryProps> = ({
       )}
 
       {/* Reply button for the conversation */}
-      {lastSender && (
+      {showComposeButton && lastSender && (
         <div className="mt-4">
           <ComposeLetterButton 
             recipientId={lastSender.id} 
             recipientName={lastSender.sender.name} 
             className="w-full"
+            conversation={true}
           />
         </div>
       )}
@@ -165,10 +178,10 @@ const ConversationHistory: React.FC<ConversationHistoryProps> = ({
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
               <AlertTriangle className="h-5 w-5 text-destructive" />
-              Confirm Deletion
+              Delete Entire Conversation
             </AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete this letter? This action cannot be undone.
+              Are you sure you want to delete this entire conversation? This action cannot be undone and will remove all letters in this thread.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -177,7 +190,7 @@ const ConversationHistory: React.FC<ConversationHistoryProps> = ({
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               onClick={confirmDelete}
             >
-              Delete
+              Delete Conversation
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

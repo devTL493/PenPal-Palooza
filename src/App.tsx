@@ -11,6 +11,7 @@ import PenPals from "./pages/PenPals";
 import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
 import LetterDetail from "./pages/LetterDetail";
+import ConversationPage from "./pages/ConversationPage";
 
 const queryClient = new QueryClient();
 
@@ -24,6 +25,7 @@ const App = () => (
           <Route path="/" element={<Index />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/letter/:id" element={<LetterDetail />} />
+          <Route path="/conversation/:id" element={<ConversationPage />} />
           <Route path="/compose" element={<Compose />} />
           <Route path="/penpals" element={<PenPals />} />
           <Route path="/profile" element={<Profile />} />
