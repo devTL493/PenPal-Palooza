@@ -2,11 +2,16 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import LetterCard from '@/components/LetterCard';
 import Navigation from '@/components/Navigation';
-import ComposeLetterButton from '@/components/letter/ComposeLetterButton';
-import { Search, Inbox, Send, Mail, Heart } from 'lucide-react';
+import { PenTool, Search, Inbox, Send, Mail, Heart } from 'lucide-react';
 
 // Sample data
 const inboxLetters = [
@@ -91,7 +96,7 @@ const Dashboard = () => {
       <Navigation />
       
       <main className="container mx-auto px-4 pt-24 pb-16">
-        <div className="max-w-7xl mx-auto">
+        <div className="max-w-4xl mx-auto">
           <div className="flex items-center justify-between mb-8">
             <h1 className="text-3xl font-serif font-medium">Your Letters</h1>
           </div>
@@ -106,100 +111,87 @@ const Dashboard = () => {
             />
           </div>
           
-          {/* 3-Column Layout */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* Inbox Column */}
-            <div className="space-y-4">
-              <div className="flex items-center justify-between mb-2">
-                <h2 className="text-xl font-medium flex items-center">
-                  <Inbox className="mr-2 h-5 w-5" />
-                  Inbox
-                  <span className="ml-2 bg-primary/10 text-primary text-xs px-1.5 py-0.5 rounded-full">
-                    {inboxLetters.filter(l => l.isUnread).length}
-                  </span>
-                </h2>
-              </div>
-              
+          <Tabs defaultValue="inbox" className="w-full">
+            <TabsList className="mb-6">
+              <TabsTrigger value="inbox" className="flex items-center">
+                <Inbox className="mr-2 h-4 w-4" />
+                Inbox
+                <span className="ml-2 bg-primary/10 text-primary text-xs px-1.5 py-0.5 rounded-full">
+                  {inboxLetters.filter(l => l.isUnread).length}
+                </span>
+              </TabsTrigger>
+              <TabsTrigger value="sent" className="flex items-center">
+                <Send className="mr-2 h-4 w-4" />
+                Sent
+              </TabsTrigger>
+              <TabsTrigger value="favorites" className="flex items-center">
+                <Heart className="mr-2 h-4 w-4" />
+                Favorites
+              </TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="inbox" className="space-y-4">
               {inboxLetters.length > 0 ? (
-                <div className="space-y-3">
-                  {inboxLetters.map((letter) => (
-                    <LetterCard
-                      key={letter.id}
-                      {...letter}
-                      onClick={() => handleOpenLetter(letter.id)}
-                    />
-                  ))}
-                </div>
+                inboxLetters.map((letter) => (
+                  <LetterCard
+                    key={letter.id}
+                    {...letter}
+                    onClick={() => handleOpenLetter(letter.id)}
+                  />
+                ))
               ) : (
-                <div className="text-center py-12 border rounded-md">
+                <div className="text-center py-12">
                   <Inbox className="h-12 w-12 mx-auto text-muted-foreground opacity-50" />
                   <h3 className="mt-4 text-lg font-medium">Your inbox is empty</h3>
                   <p className="mt-1 text-muted-foreground">When you receive letters, they'll appear here.</p>
                 </div>
               )}
-            </div>
+            </TabsContent>
             
-            {/* Sent Column */}
-            <div className="space-y-4">
-              <div className="flex items-center justify-between mb-2">
-                <h2 className="text-xl font-medium flex items-center">
-                  <Send className="mr-2 h-5 w-5" />
-                  Sent
-                </h2>
-              </div>
-              
+            <TabsContent value="sent" className="space-y-4">
               {sentLetters.length > 0 ? (
-                <div className="space-y-3">
-                  {sentLetters.map((letter) => (
-                    <LetterCard
-                      key={letter.id}
-                      {...letter}
-                      onClick={() => handleOpenLetter(letter.id)}
-                    />
-                  ))}
-                </div>
+                sentLetters.map((letter) => (
+                  <LetterCard
+                    key={letter.id}
+                    {...letter}
+                    onClick={() => handleOpenLetter(letter.id)}
+                  />
+                ))
               ) : (
-                <div className="text-center py-12 border rounded-md">
+                <div className="text-center py-12">
                   <Send className="h-12 w-12 mx-auto text-muted-foreground opacity-50" />
                   <h3 className="mt-4 text-lg font-medium">No sent letters</h3>
                   <p className="mt-1 text-muted-foreground">When you send letters, they'll appear here.</p>
+                  <Link to="/compose" className="mt-4 inline-block">
+                    <Button>
+                      <PenTool className="mr-2 h-4 w-4" />
+                      Write your first letter
+                    </Button>
+                  </Link>
                 </div>
               )}
-            </div>
+            </TabsContent>
             
-            {/* Favorites Column */}
-            <div className="space-y-4">
-              <div className="flex items-center justify-between mb-2">
-                <h2 className="text-xl font-medium flex items-center">
-                  <Heart className="mr-2 h-5 w-5" />
-                  Favorites
-                </h2>
-              </div>
-              
+            <TabsContent value="favorites" className="space-y-4">
               {favoriteLetters.length > 0 ? (
-                <div className="space-y-3">
-                  {favoriteLetters.map((letter) => (
-                    <LetterCard
-                      key={letter.id}
-                      {...letter}
-                      onClick={() => handleOpenLetter(letter.id)}
-                    />
-                  ))}
-                </div>
+                favoriteLetters.map((letter) => (
+                  <LetterCard
+                    key={letter.id}
+                    {...letter}
+                    onClick={() => handleOpenLetter(letter.id)}
+                  />
+                ))
               ) : (
-                <div className="text-center py-12 border rounded-md">
+                <div className="text-center py-12">
                   <Heart className="h-12 w-12 mx-auto text-muted-foreground opacity-50" />
                   <h3 className="mt-4 text-lg font-medium">No favorite letters</h3>
                   <p className="mt-1 text-muted-foreground">Mark letters as favorites to save them for later.</p>
                 </div>
               )}
-            </div>
-          </div>
+            </TabsContent>
+          </Tabs>
         </div>
       </main>
-      
-      {/* Fixed Compose Button */}
-      <ComposeLetterButton position="bottom-right" size="lg" />
     </div>
   );
 };
