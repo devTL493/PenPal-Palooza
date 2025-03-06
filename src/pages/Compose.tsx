@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useToast } from "@/hooks/use-toast";
@@ -881,4 +882,223 @@ const Compose = () => {
                               <SelectContent>
                                 {colorOptions.map((color) => (
                                   <SelectItem key={color.value} value={color.value}>
-                                    <div className="
+                                    <div className="flex items-center gap-2">
+                                      <div className="w-4 h-4 rounded-full" style={{ backgroundColor: color.color }}></div>
+                                      {color.label}
+                                    </div>
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          
+                          <div className="space-y-2">
+                            <label className="text-sm font-medium">Alignment</label>
+                            <div className="flex gap-2">
+                              <Button 
+                                variant={activeTextFormat.alignment === 'text-left' ? 'default' : 'outline'} 
+                                size="sm"
+                                onClick={() => applyFormatting('alignment', 'text-left')}
+                              >
+                                <AlignLeft className="h-4 w-4" />
+                              </Button>
+                              <Button 
+                                variant={activeTextFormat.alignment === 'text-center' ? 'default' : 'outline'} 
+                                size="sm"
+                                onClick={() => applyFormatting('alignment', 'text-center')}
+                              >
+                                <AlignCenter className="h-4 w-4" />
+                              </Button>
+                              <Button 
+                                variant={activeTextFormat.alignment === 'text-right' ? 'default' : 'outline'} 
+                                size="sm"
+                                onClick={() => applyFormatting('alignment', 'text-right')}
+                              >
+                                <AlignRight className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+                    
+                    <Button
+                      variant={activeTextFormat.isBold ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => applyFormatting('bold', !activeTextFormat.isBold)}
+                      disabled={!selectionRange}
+                    >
+                      <Bold className="h-4 w-4" />
+                    </Button>
+                    
+                    <Button
+                      variant={activeTextFormat.isItalic ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => applyFormatting('italic', !activeTextFormat.isItalic)}
+                      disabled={!selectionRange}
+                    >
+                      <Italic className="h-4 w-4" />
+                    </Button>
+                    
+                    <Button
+                      variant={activeTextFormat.isUnderline ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => applyFormatting('underline', !activeTextFormat.isUnderline)}
+                      disabled={!selectionRange}
+                    >
+                      <Underline className="h-4 w-4" />
+                    </Button>
+                    
+                    <Popover open={linkPopoverOpen} onOpenChange={setLinkPopoverOpen}>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          disabled={!selectionRange}
+                        >
+                          <LinkIcon className="h-4 w-4" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-80">
+                        <div className="space-y-4">
+                          <h3 className="font-medium">Insert Link</h3>
+                          <div className="space-y-2">
+                            <label className="text-sm font-medium">URL</label>
+                            <Input 
+                              value={linkUrl}
+                              onChange={(e) => setLinkUrl(e.target.value)}
+                              placeholder="https://example.com"
+                            />
+                          </div>
+                          <div className="flex justify-end gap-2">
+                            <Button variant="outline" size="sm" onClick={() => setLinkPopoverOpen(false)}>
+                              <X className="h-4 w-4 mr-2" />
+                              Cancel
+                            </Button>
+                            <Button size="sm" onClick={insertLink}>
+                              <LinkIcon className="h-4 w-4 mr-2" />
+                              Insert Link
+                            </Button>
+                          </div>
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+                    
+                    <Popover open={paperStylePopoverOpen} onOpenChange={setPaperStylePopoverOpen}>
+                      <PopoverTrigger asChild>
+                        <Button variant="outline" size="sm">
+                          <Palette className="h-4 w-4 mr-2" />
+                          Paper Style
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-80">
+                        <div className="space-y-4">
+                          <h3 className="font-medium">Paper Style</h3>
+                          
+                          <div className="space-y-2">
+                            <label className="text-sm font-medium">Paper Color</label>
+                            <div className="grid grid-cols-3 gap-2">
+                              {paperStyleOptions.map((style) => (
+                                <button
+                                  key={style.value}
+                                  onClick={() => updateLetterStyle('paperStyle', style.value)}
+                                  className={`h-20 rounded border p-1 transition hover:scale-105 ${
+                                    letterStyle.paperStyle === style.value ? 'ring-2 ring-primary' : ''
+                                  } ${style.value}`}
+                                  title={style.description}
+                                >
+                                  <div className="h-full w-full flex items-end justify-center pb-1 text-xs font-medium">
+                                    {style.label}
+                                  </div>
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                          
+                          <div className="space-y-2">
+                            <label className="text-sm font-medium">Border Style</label>
+                            <div className="grid grid-cols-3 gap-2">
+                              {borderStyleOptions.map((style) => (
+                                <button
+                                  key={style.value}
+                                  onClick={() => updateLetterStyle('borderStyle', style.value)}
+                                  className={`h-12 rounded bg-paper ${style.value} transition hover:scale-105 ${
+                                    letterStyle.borderStyle === style.value ? 'ring-2 ring-primary' : ''
+                                  }`}
+                                  title={style.description}
+                                >
+                                  <div className="h-full w-full flex items-center justify-center text-xs font-medium">
+                                    {style.label}
+                                  </div>
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+                    
+                    {shouldShowConversation && (
+                      <QuoteSelection
+                        conversation={conversation}
+                        onQuoteSelect={handleInsertQuote}
+                      />
+                    )}
+                  </div>
+                  
+                  <div className="grid grid-cols-1 gap-4">
+                    <div>
+                      <Textarea
+                        ref={textareaRef}
+                        placeholder="Write your letter here..."
+                        value={content}
+                        onChange={(e) => setContent(e.target.value)}
+                        className="min-h-[300px] font-serif"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="text-sm font-medium mb-2 block">Preview</label>
+                      <div className={`min-h-[200px] p-6 rounded ${letterStyle.paperStyle} ${letterStyle.borderStyle}`}>
+                        {renderStyledContent()}
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+                
+                <CardFooter className="border-t border-border pt-4 flex flex-wrap justify-between gap-2">
+                  <div className="flex items-center text-sm text-muted-foreground">
+                    {isSaving ? (
+                      <span className="flex items-center">
+                        <Clock className="animate-pulse h-4 w-4 mr-2" />
+                        Saving...
+                      </span>
+                    ) : lastSaved ? (
+                      <span className="flex items-center">
+                        <Clock className="h-4 w-4 mr-2" />
+                        {formatLastSaved()}
+                      </span>
+                    ) : null}
+                  </div>
+                  
+                  <div className="flex gap-2">
+                    <Button variant="outline" onClick={handleAutoSave}>
+                      <Save className="h-4 w-4 mr-2" />
+                      Save Draft
+                    </Button>
+                    <Button onClick={handleSend}>
+                      <Send className="h-4 w-4 mr-2" />
+                      Send Letter
+                    </Button>
+                  </div>
+                </CardFooter>
+              </Card>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  );
+};
+
+export default Compose;
