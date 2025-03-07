@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { PenTool } from 'lucide-react';
+import ComposeLetterButton from './ComposeLetterButton';
 
 interface LetterActionsProps {
   letterId: string;
@@ -11,7 +11,11 @@ const LetterActions: React.FC<LetterActionsProps> = ({ letterId, senderName }) =
   return (
     <div className="flex justify-between">
       <div />
-      <div />
+      <ComposeLetterButton 
+        recipientId={letterId} 
+        recipientName={senderName} 
+        conversation={true}
+      />
     </div>
   );
 };

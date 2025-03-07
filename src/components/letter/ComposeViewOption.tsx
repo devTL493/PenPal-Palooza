@@ -4,12 +4,11 @@ import { useNavigate } from 'react-router-dom';
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { 
-  LayoutGrid, 
-  Maximize,
-  ExternalLink,
-} from 'lucide-react';
+  Columns, Layers, ExternalLink
+} from "lucide-react";
 
-export type ComposeViewMode = 'overlay' | 'side-by-side' | 'new-tab';
+// Define the view modes
+export type ComposeViewMode = 'side-by-side' | 'overlay' | 'new-tab';
 
 interface ComposeViewOptionProps {
   currentMode: ComposeViewMode;
@@ -41,24 +40,24 @@ const ComposeViewOption: React.FC<ComposeViewOptionProps> = ({
     <div className="flex items-center space-x-2 bg-muted/30 p-1 rounded-md">
       <Button
         size="sm"
-        variant={currentMode === 'overlay' ? 'default' : 'ghost'}
-        onClick={() => onModeChange('overlay')}
+        variant={currentMode === 'side-by-side' ? 'default' : 'ghost'}
+        onClick={() => onModeChange('side-by-side')}
         className="flex-1"
-        title="Hover draft over conversation"
+        title="Show conversation history side-by-side"
       >
-        <Maximize className="h-4 w-4 mr-2" />
-        <span className="hidden sm:inline">Overlay</span>
+        <Columns className="h-4 w-4 mr-2" />
+        <span className={cn("hidden sm:inline-block")}>Side by Side</span>
       </Button>
       
       <Button
         size="sm"
-        variant={currentMode === 'side-by-side' ? 'default' : 'ghost'}
-        onClick={() => onModeChange('side-by-side')}
+        variant={currentMode === 'overlay' ? 'default' : 'ghost'}
+        onClick={() => onModeChange('overlay')}
         className="flex-1"
-        title="Show draft and conversation side by side"
+        title="Show conversation history as background overlay"
       >
-        <LayoutGrid className="h-4 w-4 mr-2" />
-        <span className="hidden sm:inline">Side by Side</span>
+        <Layers className="h-4 w-4 mr-2" />
+        <span className={cn("hidden sm:inline-block")}>Overlay</span>
       </Button>
       
       <Button
@@ -69,7 +68,7 @@ const ComposeViewOption: React.FC<ComposeViewOptionProps> = ({
         title="Open compose in new tab"
       >
         <ExternalLink className="h-4 w-4 mr-2" />
-        <span className="hidden sm:inline">New Tab</span>
+        <span className={cn("hidden sm:inline-block")}>New Tab</span>
       </Button>
     </div>
   );

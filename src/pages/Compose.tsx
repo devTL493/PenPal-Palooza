@@ -463,31 +463,14 @@ const Compose = () => {
               <ComposeViewOption
                 currentMode={viewMode}
                 onModeChange={handleViewModeChange}
+                recipientId={recipient}
               />
             )}
           </div>
           
           <div className={`${viewMode === 'side-by-side' && shouldShowConversation ? 'grid grid-cols-1 md:grid-cols-2 gap-4' : ''}`}>
-            {/* Conversation History Column - Only shown in side-by-side mode or as background in overlay mode */}
-            {shouldShowConversation && (viewMode === 'side-by-side' || viewMode === 'overlay') && (
-              <div className={`space-y-4 ${viewMode === 'overlay' ? 'absolute inset-0 z-0 opacity-15 pointer-events-none' : ''}`}>
-                {viewMode === 'side-by-side' && (
-                  <h2 className="text-lg font-medium font-serif">Conversation History</h2>
-                )}
-                
-                <ConversationHistory 
-                  conversation={conversation}
-                  activeMessageId={activeQuoteId}
-                  onScrollToQuote={scrollToQuoteInConversation}
-                  viewMode={viewMode}
-                  showComposeButton={viewMode !== 'side-by-side'}
-                  expandable={viewMode === 'side-by-side'}
-                />
-              </div>
-            )}
-            
-            {/* Compose Column */}
-            <div className={`flex-1 ${viewMode === 'overlay' && shouldShowConversation ? 'relative z-10' : ''}`}>
+            {/* Compose Column - Now comes first in side-by-side mode */}
+            <div className={`flex-1 ${viewMode === 'overlay' && shouldShowConversation ? 'relative z-10' : ''} ${viewMode === 'side-by-side' && shouldShowConversation ? 'order-2 md:order-1' : ''}`}>
               <Card className={letterCardClasses}>
                 <CardHeader className="border-b border-border">
                   <div className="space-y-4">
@@ -563,6 +546,24 @@ const Compose = () => {
                 </CardContent>
               </Card>
             </div>
+            
+            {/* Conversation History Column - Now comes second in side-by-side mode */}
+            {shouldShowConversation && (viewMode === 'side-by-side' || viewMode === 'overlay') && (
+              <div className={`space-y-4 ${viewMode === 'overlay' ? 'absolute inset-0 z-0 opacity-15 pointer-events-none' : ''} ${viewMode === 'side-by-side' ? 'order-1 md:order-2' : ''}`}>
+                {viewMode === 'side-by-side' && (
+                  <h2 className="text-lg font-medium font-serif">Conversation History</h2>
+                )}
+                
+                <ConversationHistory 
+                  conversation={conversation}
+                  activeMessageId={activeQuoteId}
+                  onScrollToQuote={scrollToQuoteInConversation}
+                  viewMode={viewMode}
+                  showComposeButton={viewMode !== 'side-by-side'}
+                  expandable={viewMode === 'side-by-side'}
+                />
+              </div>
+            )}
           </div>
         </div>
       </main>
