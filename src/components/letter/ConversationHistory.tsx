@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { 
@@ -19,7 +20,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Link } from 'react-router-dom';
 
 interface ConversationHistoryProps {
   conversation: Array<{
@@ -156,7 +156,7 @@ const ConversationHistory: React.FC<ConversationHistoryProps> = ({
                     recipientId={lastSender.id} 
                     recipientName={lastSender.sender.name} 
                     size="sm"
-                    variant="outline"
+                    variant="default"
                     conversation={true}
                   >
                     Compose a Letter

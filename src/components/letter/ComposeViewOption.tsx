@@ -1,5 +1,6 @@
 
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { 
@@ -13,12 +14,29 @@ export type ComposeViewMode = 'overlay' | 'side-by-side' | 'new-tab';
 interface ComposeViewOptionProps {
   currentMode: ComposeViewMode;
   onModeChange: (mode: ComposeViewMode) => void;
+  recipientId?: string;
 }
 
 const ComposeViewOption: React.FC<ComposeViewOptionProps> = ({ 
   currentMode, 
-  onModeChange 
+  onModeChange,
+  recipientId 
 }) => {
+  const navigate = useNavigate();
+
+  const handleNewTabClick = () => {
+    // Get the current URL
+    const currentUrl = window.location.href;
+    
+    // Open the compose page in a new tab
+    window.open(currentUrl, '_blank');
+    
+    // Navigate to conversation history page if we have a recipient ID
+    if (recipientId) {
+      navigate(`/conversation/${recipientId}`);
+    }
+  };
+
   return (
     <div className="flex items-center space-x-2 bg-muted/30 p-1 rounded-md">
       <Button
@@ -46,7 +64,7 @@ const ComposeViewOption: React.FC<ComposeViewOptionProps> = ({
       <Button
         size="sm"
         variant={currentMode === 'new-tab' ? 'default' : 'ghost'}
-        onClick={() => onModeChange('new-tab')}
+        onClick={handleNewTabClick}
         className="flex-1"
         title="Open compose in new tab"
       >
