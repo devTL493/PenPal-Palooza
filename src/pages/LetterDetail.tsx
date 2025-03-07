@@ -183,42 +183,49 @@ const LetterDetail = () => {
       <Navigation />
       
       <main className="container mx-auto px-4 pt-24 pb-16">
-        <div className="max-w-3xl mx-auto">
-          {/* Back Button */}
-          <Button variant="ghost" onClick={() => navigate('/dashboard')} className="mb-4">
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Inbox
-          </Button>
-          
-          {/* Letter Header Component */}
-          <LetterHeader 
-            letter={letter} 
-            isFavorite={isFavorite} 
-            toggleFavorite={toggleFavorite} 
-          />
-          
-          {/* Conversation History Component */}
-          {conversation && conversation.length > 1 && (
-            <ConversationHistory 
-              conversation={conversation} 
-              activeMessageId={id}
-              onScrollToQuote={scrollToQuote}
-              onDeleteConversation={handleDeleteConversation}
+        {/* Back Button */}
+        <Button variant="ghost" onClick={() => navigate('/dashboard')} className="mb-4">
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Back to Inbox
+        </Button>
+        
+        {/* 2-column layout */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Left column - Letter content */}
+          <div className="space-y-6">
+            {/* Letter Header Component */}
+            <LetterHeader 
+              letter={letter} 
+              isFavorite={isFavorite} 
+              toggleFavorite={toggleFavorite} 
             />
-          )}
+            
+            {/* Letter Content Component */}
+            <LetterContent 
+              content={letter.content} 
+              preview={letter.preview}
+              showContent={true}
+            />
+            
+            {/* Letter Actions Component */}
+            <LetterActions 
+              letterId={letter.id} 
+              senderName={letter.sender.name}
+            />
+          </div>
           
-          {/* Letter Content Component */}
-          <LetterContent 
-            content={letter.content} 
-            preview={letter.preview}
-            showContent={true}
-          />
-          
-          {/* Letter Actions Component */}
-          <LetterActions 
-            letterId={letter.id} 
-            senderName={letter.sender.name}
-          />
+          {/* Right column - Conversation history */}
+          <div>
+            {conversation && conversation.length > 1 && (
+              <ConversationHistory 
+                conversation={conversation} 
+                activeMessageId={id}
+                onScrollToQuote={scrollToQuote}
+                onDeleteConversation={handleDeleteConversation}
+                expandable={true}
+              />
+            )}
+          </div>
         </div>
       </main>
       

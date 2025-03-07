@@ -118,8 +118,8 @@ const Compose = () => {
   const [content, setContent] = useState('');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   
-  // View mode state
-  const [viewMode, setViewMode] = useState<ComposeViewMode>('overlay');
+  // View mode state - changed default to side-by-side
+  const [viewMode, setViewMode] = useState<ComposeViewMode>('side-by-side');
   const [conversation, setConversation] = useState<ConversationMessage[]>([]);
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [isInConversationContext, setIsInConversationContext] = useState(false);

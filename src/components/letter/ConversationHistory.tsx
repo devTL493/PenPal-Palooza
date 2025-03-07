@@ -167,7 +167,7 @@ const ConversationHistory: React.FC<ConversationHistoryProps> = ({
                       variant="outline"
                       conversation={true}
                     >
-                      Reply
+                      Compose a Letter
                     </ComposeLetterButton>
                   </div>
                 )}
