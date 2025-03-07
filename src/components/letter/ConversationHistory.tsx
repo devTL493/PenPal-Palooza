@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { 
@@ -141,7 +142,7 @@ const ConversationHistory: React.FC<ConversationHistoryProps> = ({
           className={`${expandable ? 'max-h-[calc(100vh-200px)]' : 'max-h-[400px]'} overflow-y-auto border rounded-md p-4`}
         >
           <div className="space-y-4">
-            {conversation.map((message) => (
+            {conversation.map((message, index) => (
               <div key={message.id} className="flex flex-col gap-2">
                 <div className="flex justify-between items-start gap-2">
                   <div className="flex-1">
@@ -153,21 +154,26 @@ const ConversationHistory: React.FC<ConversationHistoryProps> = ({
                     />
                   </div>
                 </div>
+                
+                {/* Add reply button after the most recent message from the other person */}
+                {showComposeButton && 
+                 !message.sender.isYou && 
+                 message.id === lastSender?.id && (
+                  <div className="flex justify-end mt-2">
+                    <ComposeLetterButton 
+                      recipientId={lastSender.id} 
+                      recipientName={lastSender.sender.name} 
+                      size="sm"
+                      variant="outline"
+                      conversation={true}
+                    >
+                      Reply
+                    </ComposeLetterButton>
+                  </div>
+                )}
               </div>
             ))}
           </div>
-        </div>
-      )}
-
-      {/* Reply button for the conversation */}
-      {showComposeButton && lastSender && (
-        <div className="mt-4">
-          <ComposeLetterButton 
-            recipientId={lastSender.id} 
-            recipientName={lastSender.sender.name} 
-            className="w-full"
-            conversation={true}
-          />
         </div>
       )}
 
