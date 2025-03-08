@@ -18,12 +18,14 @@ const LetterContent: React.FC<LetterContentProps> = ({
   return (
     <AnimatePresence>
       <motion.div 
-        className="paper p-8 border rounded-md mb-6 whitespace-pre-line font-serif"
+        className="max-h-[calc(100vh-300px)] overflow-y-auto"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
       >
-        {content || preview}
+        <div className="paper p-8 border rounded-md mb-6 whitespace-pre-line font-serif a4-paper">
+          {content || preview}
+        </div>
       </motion.div>
     </AnimatePresence>
   );

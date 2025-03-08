@@ -20,6 +20,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { useLocation } from 'react-router-dom';
 
 interface ConversationHistoryProps {
   conversation: Array<{
@@ -51,6 +52,10 @@ const ConversationHistory: React.FC<ConversationHistoryProps> = ({
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const conversationContainerRef = React.useRef<HTMLDivElement>(null);
   const [expandedMessages, setExpandedMessages] = useState<Record<string, boolean>>({});
+  const location = useLocation();
+  
+  // Check if we're on the conversation page
+  const isConversationPage = location.pathname.includes('/conversation/');
 
   // Scroll to a specific quote ID
   const scrollToQuote = (quoteId: string) => {
@@ -118,15 +123,18 @@ const ConversationHistory: React.FC<ConversationHistoryProps> = ({
             </Button>
           </a>
           
-          <Button 
-            variant="outline" 
-            size="icon" 
-            className="text-destructive"
-            onClick={() => setShowDeleteDialog(true)}
-            title="Delete entire conversation"
-          >
-            <Trash className="h-4 w-4" />
-          </Button>
+          {/* Only show delete button on the conversation page */}
+          {isConversationPage && (
+            <Button 
+              variant="outline" 
+              size="icon" 
+              className="text-destructive"
+              onClick={() => setShowDeleteDialog(true)}
+              title="Delete entire conversation"
+            >
+              <Trash className="h-4 w-4" />
+            </Button>
+          )}
         </div>
       </div>
       

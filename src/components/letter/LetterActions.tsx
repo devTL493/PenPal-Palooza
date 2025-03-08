@@ -1,6 +1,5 @@
 
 import React from 'react';
-import ComposeLetterButton from './ComposeLetterButton';
 
 interface LetterActionsProps {
   letterId: string;
@@ -14,11 +13,7 @@ const LetterActions: React.FC<LetterActionsProps> = ({
   return (
     <div className="flex justify-between">
       <div />
-      <ComposeLetterButton 
-        recipientId={letterId} 
-        recipientName={senderName} 
-        conversation={true} 
-      />
+      {/* ComposeLetterButton removed as requested */}
     </div>
   );
 };

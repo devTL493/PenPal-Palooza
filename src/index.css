@@ -122,6 +122,37 @@
   @apply absolute inset-0 bg-gradient-to-r from-paper-light to-paper-dark opacity-60 rounded-md z-[-1];
 }
 
+/* A4 paper sizing and page breaks */
+.a4-paper {
+  width: 21cm;
+  min-height: 29.7cm;
+  margin: 0 auto;
+  padding: 2cm;
+  box-sizing: border-box;
+  position: relative;
+  overflow-wrap: break-word;
+}
+
+/* Make children of a4-paper respect page breaks */
+.a4-paper > * {
+  page-break-inside: avoid;
+}
+
+/* Show page breaks after specified height */
+.a4-paper::after {
+  content: "";
+  display: block;
+  height: 1px;
+  margin: 1cm 0;
+  background: repeating-linear-gradient(
+    to right,
+    #ccc,
+    #ccc 5px,
+    transparent 5px,
+    transparent 10px
+  );
+}
+
 /* Letter preview animations */
 .letter-preview {
   min-height: 100px;
