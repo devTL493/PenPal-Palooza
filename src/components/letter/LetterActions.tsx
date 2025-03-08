@@ -18,7 +18,6 @@ const LetterActions: React.FC<LetterActionsProps> = ({
         recipientId={letterId} 
         recipientName={senderName} 
         conversation={true} 
-        className="bg-[#0080ff]" 
       />
     </div>
   );

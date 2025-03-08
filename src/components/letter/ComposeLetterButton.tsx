@@ -39,9 +39,9 @@ const ComposeLetterButton: React.FC<ComposeLetterButtonProps> = ({
   return (
     <Link to={composeUrl}>
       <Button 
-        variant="default" 
+        variant={variant} 
         size={size}
-        className={`bg-[#1EAEDB] hover:bg-[#0FA0CE] text-white ${className} ${positionClassNames}`}
+        className={`${className} ${positionClassNames}`}
         {...props}
       >
         {children || (
