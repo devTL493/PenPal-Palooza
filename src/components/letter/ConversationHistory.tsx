@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { 
@@ -9,7 +8,6 @@ import {
 } from 'lucide-react';
 import { Badge } from "@/components/ui/badge";
 import CollapsibleMessage from './CollapsibleMessage';
-import ComposeLetterButton from './ComposeLetterButton';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -46,7 +44,7 @@ const ConversationHistory: React.FC<ConversationHistoryProps> = ({
   onScrollToQuote,
   onDeleteConversation,
   viewMode = 'overlay',
-  showComposeButton = true,
+  showComposeButton = false,
   expandable = false
 }) => {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -156,21 +154,7 @@ const ConversationHistory: React.FC<ConversationHistoryProps> = ({
                 </div>
               </div>
               
-              {showComposeButton && 
-               !message.sender.isYou && 
-               message.id === lastSender?.id && (
-                <div className="flex justify-end mt-2">
-                  <ComposeLetterButton 
-                    recipientId={lastSender.id} 
-                    recipientName={lastSender.sender.name} 
-                    size="sm"
-                    variant="default"
-                    conversation={true}
-                  >
-                    Compose a Letter
-                  </ComposeLetterButton>
-                </div>
-              )}
+              {/* Compose button in conversation history removed */}
             </div>
           ))}
         </div>

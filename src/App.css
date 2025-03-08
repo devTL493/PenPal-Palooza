@@ -7,6 +7,12 @@
   text-align: center;
 }
 
+@media (max-width: 640px) {
+  #root {
+    padding: 1rem;
+  }
+}
+
 @media (min-width: 1280px) {
   #root {
     max-width: 100%;
@@ -47,4 +53,18 @@
 
 .read-the-docs {
   color: #888;
+}
+
+/* Mobile optimizations */
+@media (max-width: 768px) {
+  .a4-paper {
+    width: 100%;
+    min-height: auto;
+    padding: 1rem;
+  }
+  
+  /* Make letters readable on mobile */
+  .scrollable-container {
+    max-height: 70vh;
+  }
 }
