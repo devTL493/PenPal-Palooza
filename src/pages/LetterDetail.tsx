@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -182,17 +183,17 @@ const LetterDetail = () => {
     <div className="min-h-screen bg-background">
       <Navigation />
       
-      <main className="container mx-auto px-4 pt-24 pb-16">
+      <main className="container mx-auto px-4 pt-24 pb-16 max-w-screen-2xl">
         {/* Back Button */}
         <Button variant="ghost" onClick={() => navigate('/dashboard')} className="mb-4">
           <ArrowLeft className="mr-2 h-4 w-4" />
           Back to Inbox
         </Button>
         
-        {/* 2-column layout */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Left column - Letter content */}
-          <div className="space-y-6">
+        {/* 2-column layout with better space utilization */}
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
+          {/* Left column - Letter content (3/5 of the space) */}
+          <div className="lg:col-span-3 space-y-6">
             {/* Letter Header Component */}
             <LetterHeader 
               letter={letter} 
@@ -214,8 +215,8 @@ const LetterDetail = () => {
             />
           </div>
           
-          {/* Right column - Conversation history */}
-          <div>
+          {/* Right column - Conversation history (2/5 of the space) */}
+          <div className="lg:col-span-2">
             {conversation && conversation.length > 1 && (
               <ConversationHistory 
                 conversation={conversation} 
