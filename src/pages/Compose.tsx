@@ -1,3 +1,4 @@
+
 import React, { useState, useRef } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useToast } from "@/hooks/use-toast";
@@ -444,9 +445,9 @@ const Compose = () => {
     <div className="min-h-screen bg-background">
       <Navigation />
       
-      <main className={`container mx-auto px-4 pt-24 pb-16 ${viewMode === 'overlay' && shouldShowConversation ? 'relative' : ''}`}>
-        <div className="max-w-5xl mx-auto">
-          <div className="flex justify-between items-center mb-6">
+      <main className={`w-full px-4 pt-24 pb-16 ${viewMode === 'overlay' && shouldShowConversation ? 'relative' : ''}`}>
+        <div className="w-full mx-auto">
+          <div className="flex justify-between items-center mb-6 max-w-screen-2xl mx-auto">
             <div className="flex items-center">
               <Button variant="ghost" onClick={() => navigate(-1)} className="mr-2">
                 <ArrowLeft className="h-4 w-4 mr-2" />
@@ -468,7 +469,7 @@ const Compose = () => {
             )}
           </div>
           
-          <div className={`${viewMode === 'side-by-side' && shouldShowConversation ? 'grid grid-cols-1 md:grid-cols-2 gap-4' : ''}`}>
+          <div className={`max-w-screen-2xl mx-auto ${viewMode === 'side-by-side' && shouldShowConversation ? 'grid grid-cols-1 md:grid-cols-2 gap-6' : ''}`}>
             {/* Compose Column - Now comes first in side-by-side mode */}
             <div className={`flex-1 ${viewMode === 'overlay' && shouldShowConversation ? 'relative z-10' : ''} ${viewMode === 'side-by-side' && shouldShowConversation ? 'order-2 md:order-1' : ''}`}>
               <Card className={letterCardClasses}>
