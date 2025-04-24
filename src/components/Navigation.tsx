@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { cn } from "@/lib/utils";
@@ -9,8 +10,10 @@ import {
   Users, 
   Home,
   X,
-  Mail
+  Mail,
+  LogOut
 } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 
 // Sample unread count - in a real app, this would come from context/state
 const unreadCount = 1;
@@ -19,6 +22,7 @@ const Navigation = () => {
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
   const [scrolled, setScrolled] = useState(false);
+  const { user, signOut } = useAuth();
 
   // Handle scroll events to apply styling
   useEffect(() => {
@@ -35,7 +39,8 @@ const Navigation = () => {
     setIsOpen(false);
   }, [location.pathname]);
 
-  const navItems = [
+  // Define navigation items based on auth status
+  const navItems = user ? [
     { name: 'Home', path: '/', icon: <Home className="h-4 w-4" /> },
     { 
       name: 'Inbox', 
@@ -51,7 +56,13 @@ const Navigation = () => {
     },
     { name: 'Pen Pals', path: '/penpals', icon: <Users className="h-4 w-4" /> },
     { name: 'Profile', path: '/profile', icon: <User className="h-4 w-4" /> },
+  ] : [
+    { name: 'Home', path: '/', icon: <Home className="h-4 w-4" /> },
   ];
+
+  const handleSignOut = async () => {
+    await signOut();
+  };
 
   return (
     <>
@@ -98,6 +109,23 @@ const Navigation = () => {
                 </span>
               </Link>
             ))}
+            
+            {/* Conditionally render auth buttons */}
+            {user ? (
+              <Button 
+                onClick={handleSignOut} 
+                variant="ghost" 
+                size="sm" 
+                className="ml-2"
+              >
+                <LogOut className="h-4 w-4 mr-1" />
+                Sign Out
+              </Button>
+            ) : (
+              <Link to="/auth">
+                <Button size="sm" className="ml-2">Sign In</Button>
+              </Link>
+            )}
           </nav>
         </div>
       </div>
@@ -147,6 +175,22 @@ const Navigation = () => {
                 </span>
               </Link>
             ))}
+            
+            {/* Mobile auth buttons */}
+            {user ? (
+              <Button 
+                onClick={handleSignOut} 
+                variant="outline" 
+                className="mt-4 w-full justify-start"
+              >
+                <LogOut className="h-4 w-4 mr-2" />
+                Sign Out
+              </Button>
+            ) : (
+              <Link to="/auth" className="mt-4 w-full">
+                <Button className="w-full">Sign In</Button>
+              </Link>
+            )}
           </nav>
           
           <div className="pt-6 border-t border-border">

@@ -4,8 +4,13 @@ import { Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { motion, useInView, useAnimation } from 'framer-motion';
 import { Mail, Send, Inbox, Users, ArrowRight } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import Navigation from '@/components/Navigation';
 
 const Index = () => {
+  // Get authentication state
+  const { user } = useAuth();
+  
   // Animation refs and controls
   const controls = useAnimation();
   const heroRef = useRef(null);
@@ -43,6 +48,9 @@ const Index = () => {
 
   return (
     <div className="min-h-screen">
+      {/* Add Navigation component */}
+      <Navigation />
+      
       {/* Hero Section */}
       <section 
         ref={heroRef} 
@@ -91,13 +99,22 @@ const Index = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.7, duration: 0.8 }}
           >
-            <Link to="/dashboard">
-              <Button size="lg" className="h-12 px-6">
-                <Mail className="mr-2 h-5 w-5" />
-                Get Started
-              </Button>
-            </Link>
-            <Link to="/dashboard">
+            {user ? (
+              <Link to="/dashboard">
+                <Button size="lg" className="h-12 px-6">
+                  <Mail className="mr-2 h-5 w-5" />
+                  Go to Dashboard
+                </Button>
+              </Link>
+            ) : (
+              <Link to="/auth">
+                <Button size="lg" className="h-12 px-6">
+                  <Mail className="mr-2 h-5 w-5" />
+                  Get Started
+                </Button>
+              </Link>
+            )}
+            <Link to={user ? "/dashboard" : "/auth"}>
               <Button variant="outline" size="lg" className="h-12 px-6">
                 Explore
                 <ArrowRight className="ml-2 h-5 w-5" />
@@ -196,10 +213,10 @@ const Index = () => {
             animate={ctaInView ? { opacity: 1, y: 0 } : {}}
             transition={{ delay: 0.4, duration: 0.8 }}
           >
-            <Link to="/dashboard">
+            <Link to={user ? "/dashboard" : "/auth"}>
               <Button size="lg" className="h-12 px-8">
                 <Mail className="mr-2 h-5 w-5" />
-                Get Started Today
+                {user ? "Go to Dashboard" : "Get Started Today"}
               </Button>
             </Link>
           </motion.div>
