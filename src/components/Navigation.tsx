@@ -23,6 +23,11 @@ const Navigation = () => {
   const location = useLocation();
   const [scrolled, setScrolled] = useState(false);
   const { user, signOut } = useAuth();
+  
+  // Only show navigation on landing page
+  const showNavigation = location.pathname === '/';
+  
+  if (!showNavigation) return null;
 
   // Handle scroll events to apply styling
   useEffect(() => {

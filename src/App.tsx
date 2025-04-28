@@ -5,6 +5,8 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
+import { SidebarProvider } from "./components/ui/sidebar";
+import { AppSidebar } from "./components/AppSidebar";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
@@ -25,41 +27,48 @@ const App = () => (
         <Toaster />
         <Sonner />
         <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/auth" element={<Auth />} />
-            <Route path="/dashboard" element={
-              <ProtectedRoute>
-                <Dashboard />
-              </ProtectedRoute>
-            } />
-            <Route path="/letter/:id" element={
-              <ProtectedRoute>
-                <LetterDetail />
-              </ProtectedRoute>
-            } />
-            <Route path="/conversation/:id" element={
-              <ProtectedRoute>
-                <ConversationPage />
-              </ProtectedRoute>
-            } />
-            <Route path="/compose" element={
-              <ProtectedRoute>
-                <Compose />
-              </ProtectedRoute>
-            } />
-            <Route path="/penpals" element={
-              <ProtectedRoute>
-                <PenPals />
-              </ProtectedRoute>
-            } />
-            <Route path="/profile" element={
-              <ProtectedRoute>
-                <Profile />
-              </ProtectedRoute>
-            } />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
+          <SidebarProvider>
+            <div className="flex min-h-screen w-full">
+              <AppSidebar />
+              <div className="flex-1 relative">
+                <Routes>
+                  <Route path="/" element={<Index />} />
+                  <Route path="/auth" element={<Auth />} />
+                  <Route path="/dashboard" element={
+                    <ProtectedRoute>
+                      <Dashboard />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/letter/:id" element={
+                    <ProtectedRoute>
+                      <LetterDetail />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/conversation/:id" element={
+                    <ProtectedRoute>
+                      <ConversationPage />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/compose" element={
+                    <ProtectedRoute>
+                      <Compose />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/penpals" element={
+                    <ProtectedRoute>
+                      <PenPals />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/profile" element={
+                    <ProtectedRoute>
+                      <Profile />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </div>
+            </div>
+          </SidebarProvider>
         </BrowserRouter>
       </TooltipProvider>
     </AuthProvider>
