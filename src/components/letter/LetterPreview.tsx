@@ -1,7 +1,8 @@
-
 import React from 'react';
 import StyledQuote from './StyledQuote';
 import { TextAlignment, InlineStyle } from '@/types/letter';
+import { useAuth } from '@/contexts/AuthContext';
+import { formatDistanceToNow } from 'date-fns';
 
 interface LetterPreviewProps {
   content: string;
@@ -13,15 +14,23 @@ interface LetterPreviewProps {
   };
   inlineStyles: InlineStyle[];
   scrollToQuoteInConversation: (quoteId: string) => void;
+  timestamp?: string;
+  isPreview?: boolean;
 }
 
 const LetterPreview: React.FC<LetterPreviewProps> = ({
   content,
   documentStyle,
   inlineStyles,
-  scrollToQuoteInConversation
+  scrollToQuoteInConversation,
+  timestamp,
+  isPreview = true
 }) => {
-  if (!content) return <p className="text-gray-400">Your letter will appear here...</p>;
+  const { profile } = useAuth();
+  const formattedTime = timestamp ? formatDistanceToNow(new Date(timestamp), { addSuffix: true }) : '';
+  
+  if (!content && isPreview) return <p className="text-gray-400">Your letter will appear here...</p>;
+  if (!content) return null;
   
   // Create spans with appropriate styling
   let result = [];
@@ -192,7 +201,25 @@ const LetterPreview: React.FC<LetterPreviewProps> = ({
     }
   }
   
-  return <div className={`${documentStyle.alignment} whitespace-pre-wrap`}>{result}</div>;
+  return (
+    <div className={`${documentStyle.alignment} whitespace-pre-wrap`}>
+      {isPreview && profile && (
+        <div className="flex justify-between items-center mb-3">
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center text-xs font-medium">
+              {profile.username?.[0]?.toUpperCase() || 'U'}
+            </div>
+            <span className="text-sm font-medium">{profile.username || 'You'}</span>
+          </div>
+          {formattedTime && (
+            <span className="text-xs text-muted-foreground">{formattedTime}</span>
+          )}
+        </div>
+      )}
+      
+      {result}
+    </div>
+  );
 };
 
 export default LetterPreview;

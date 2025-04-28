@@ -1,13 +1,11 @@
-
-import React, { useState, useRef } from 'react';
-import { useSearchParams, useNavigate } from 'react-router-dom';
+import React, { useState, useRef, useEffect } from 'react';
+import { useSearchParams, useNavigate, useParams } from 'react-router-dom';
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { 
   Card, 
   CardContent, 
-  CardFooter, 
   CardHeader 
 } from "@/components/ui/card";
 import {
@@ -18,13 +16,17 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import Navigation from '@/components/Navigation';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Send } from 'lucide-react';
 import ComposeViewOption, { ComposeViewMode } from '@/components/letter/ComposeViewOption';
 import ConversationHistory from '@/components/letter/ConversationHistory';
-import LetterContentEditor from '@/components/letter/LetterContentEditor';
+import ChatMessageInput from '@/components/letter/ChatMessageInput';
+import LetterPreview from '@/components/letter/LetterPreview';
 import useTextSelection from '@/hooks/useTextSelection';
 import useLetterSave from '@/hooks/useLetterSave';
-import { InlineStyle, LetterStyle, TextAlignment, ConversationMessage } from '@/types/letter';
+import { InlineStyle, LetterStyle, TextAlignment, ConversationMessage, UserProfile } from '@/types/letter';
+import { useAuth } from '@/contexts/AuthContext';
+import PaperStylePopover from '@/components/letter/PaperStylePopover';
+import LinkPopover from '@/components/letter/LinkPopover';
 
 // Sample pen pals for the demo
 const samplePenPals = [
@@ -113,19 +115,22 @@ const Compose = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const { id: conversationId } = useParams();
+  const { profile } = useAuth();
+  
   const [recipient, setRecipient] = useState('');
   const [recipientName, setRecipientName] = useState('');
+  const [recipientProfile, setRecipientProfile] = useState<UserProfile | null>(null);
   const [subject, setSubject] = useState('');
   const [content, setContent] = useState('');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   
-  // View mode state - changed default to side-by-side
+  // View mode state
   const [viewMode, setViewMode] = useState<ComposeViewMode>('side-by-side');
   const [conversation, setConversation] = useState<ConversationMessage[]>([]);
-  const [conversationId, setConversationId] = useState<string | null>(null);
-  const [isInConversationContext, setIsInConversationContext] = useState(false);
+  const [isInConversationContext, setIsInConversationContext] = useState(!!conversationId);
   
-  // Style for the whole document (default styling)
+  // Style for the whole document
   const [documentStyle, setDocumentStyle] = useState({
     font: 'font-serif',
     size: 'text-lg',
@@ -142,18 +147,15 @@ const Compose = () => {
     borderStyle: 'border-none',
   });
 
-  // Link insertion
+  // Popovers state
+  const [linkPopoverOpen, setLinkPopoverOpen] = useState(false);
   const [linkText, setLinkText] = useState('');
   const [linkUrl, setLinkUrl] = useState('');
-  const [linkPopoverOpen, setLinkPopoverOpen] = useState(false);
   const [stylePopoverOpen, setStylePopoverOpen] = useState(false);
   const [paperStylePopoverOpen, setPaperStylePopoverOpen] = useState(false);
   const [activeQuoteId, setActiveQuoteId] = useState<string | null>(null);
 
-  // Used for styling the letter card
-  const letterCardClasses = `overflow-hidden ${letterStyle.paperStyle} ${letterStyle.borderStyle}`;
-
-  // Check if we should show the conversation (only in overlay or side-by-side modes)
+  // Check if we should show the conversation
   const shouldShowConversation = viewMode !== 'new-tab' && conversation.length > 0;
 
   // Use custom hooks
@@ -180,8 +182,24 @@ const Compose = () => {
     letterStyle 
   });
 
-  // Process query parameters for pre-filled data
-  React.useEffect(() => {
+  // Fetch conversation messages when in conversation context
+  useEffect(() => {
+    if (conversationId) {
+      // In a real app, fetch messages for this conversation
+      setConversation(sampleConversation);
+      
+      // Get recipient info
+      if (sampleConversation.length > 0) {
+        const otherPerson = sampleConversation.find(msg => !msg.sender.isYou);
+        if (otherPerson) {
+          setRecipientName(otherPerson.sender.name);
+        }
+      }
+    }
+  }, [conversationId]);
+
+  // Process query parameters
+  useEffect(() => {
     const recipientId = searchParams.get('recipient');
     if (recipientId) {
       setRecipient(recipientId);
@@ -302,7 +320,7 @@ const Compose = () => {
       });
       return;
     }
-
+    
     // Create the letter object with styling information
     const letterData = {
       recipient: recipient || conversationId,
@@ -314,16 +332,32 @@ const Compose = () => {
       sentAt: new Date(),
     };
 
-    // Simulate sending the letter
-    console.log("Sending letter with styles:", letterData);
-    
+    // Show success toast
     toast({
       title: "Letter sent",
-      description: "Your letter has been sent successfully with your chosen styles.",
+      description: "Your letter has been sent successfully.",
     });
-
-    // Navigate back to the conversation or dashboard
-    navigate(conversationId ? `/conversation/${conversationId}` : '/dashboard');
+    
+    // Add the new message to the conversation
+    if (isInConversationContext) {
+      const newMessage = {
+        id: `msg-${Date.now()}`,
+        sender: {
+          name: profile?.username || 'You',
+          isYou: true,
+        },
+        content,
+        date: new Date().toISOString(),
+      };
+      
+      setConversation(prev => [...prev, newMessage]);
+      
+      // Clear the content for a new message
+      setContent('');
+    } else {
+      // Navigate back to the conversation or dashboard
+      navigate(conversationId ? `/conversation/${conversationId}` : '/dashboard');
+    }
   };
 
   const insertLink = () => {
@@ -423,24 +457,6 @@ const Compose = () => {
     setActiveQuoteId(quoteId);
   };
 
-  // Function to handle view mode changes
-  const handleViewModeChange = (mode: ComposeViewMode) => {
-    setViewMode(mode);
-    
-    // If switching to new-tab mode, open in a new window/tab
-    if (mode === 'new-tab') {
-      const url = new URL(window.location.href);
-      url.searchParams.set('mode', 'new-tab');
-      window.open(url.toString(), '_blank');
-    }
-  };
-
-  // Function to update letter styling
-  const updateLetterStyle = (type: 'paperStyle' | 'borderStyle', value: string) => {
-    setLetterStyle(prev => ({ ...prev, [type]: value }));
-    setPaperStylePopoverOpen(false);
-  };
-
   return (
     <div className="min-h-screen bg-background">
       <Navigation />
@@ -455,7 +471,7 @@ const Compose = () => {
               </Button>
               <h1 className="text-3xl font-serif font-medium">
                 {isInConversationContext 
-                  ? `Reply to ${recipientName || "Conversation"}` 
+                  ? `Correspondence with ${recipientName || "Pen Pal"}` 
                   : "Compose Letter"}
               </h1>
             </div>
@@ -463,19 +479,37 @@ const Compose = () => {
             {conversation.length > 0 && (
               <ComposeViewOption
                 currentMode={viewMode}
-                onModeChange={handleViewModeChange}
+                onModeChange={setViewMode}
                 recipientId={recipient}
               />
             )}
           </div>
           
-          <div className={`max-w-screen-2xl mx-auto ${viewMode === 'side-by-side' && shouldShowConversation ? 'grid grid-cols-1 md:grid-cols-2 gap-6' : ''}`}>
-            {/* Compose Column - Now comes first in side-by-side mode */}
-            <div className={`flex-1 ${viewMode === 'overlay' && shouldShowConversation ? 'relative z-10' : ''} ${viewMode === 'side-by-side' && shouldShowConversation ? 'order-2 md:order-1' : ''}`}>
-              <Card className={letterCardClasses}>
-                <CardHeader className="border-b border-border">
-                  <div className="space-y-4">
-                    {!isInConversationContext && (
+          <div className={`max-w-screen-2xl mx-auto ${viewMode === 'side-by-side' ? 'grid grid-cols-1 lg:grid-cols-5 gap-6' : ''}`}>
+            {/* Conversation History Column */}
+            {shouldShowConversation && (viewMode === 'side-by-side' || viewMode === 'overlay') && (
+              <div className={`space-y-4 ${viewMode === 'overlay' ? 'absolute inset-0 z-0 opacity-15 pointer-events-none' : ''} ${viewMode === 'side-by-side' ? 'lg:col-span-2 order-first' : ''}`}>
+                {viewMode === 'side-by-side' && (
+                  <h2 className="text-lg font-medium font-serif">Correspondence History</h2>
+                )}
+                
+                <ConversationHistory 
+                  conversation={conversation}
+                  activeMessageId={activeQuoteId}
+                  onScrollToQuote={scrollToQuoteInConversation}
+                  viewMode={viewMode}
+                  showComposeButton={viewMode !== 'side-by-side'}
+                  expandable={viewMode === 'side-by-side'}
+                />
+              </div>
+            )}
+            
+            {/* Letter Compose Area */}
+            <div className={`space-y-4 ${viewMode === 'overlay' ? 'relative z-10' : ''} ${viewMode === 'side-by-side' ? 'lg:col-span-3' : ''}`}>
+              {!isInConversationContext && (
+                <Card>
+                  <CardHeader>
+                    <div className="space-y-4">
                       <div>
                         <Select value={recipient} onValueChange={setRecipient}>
                           <SelectTrigger id="recipient">
@@ -490,81 +524,94 @@ const Compose = () => {
                           </SelectContent>
                         </Select>
                       </div>
-                    )}
-                    
-                    <div>
-                      <Input
-                        id="subject"
-                        placeholder="Subject"
-                        value={subject}
-                        onChange={(e) => setSubject(e.target.value)}
-                        className="font-medium"
-                      />
+                      
+                      <div>
+                        <Input
+                          id="subject"
+                          placeholder="Subject"
+                          value={subject}
+                          onChange={(e) => setSubject(e.target.value)}
+                          className="font-medium"
+                        />
+                      </div>
                     </div>
-                  </div>
-                </CardHeader>
+                  </CardHeader>
+                </Card>
+              )}
+
+              {/* Styling options */}
+              <div className="flex items-center gap-2">
+                <PaperStylePopover
+                  paperStylePopoverOpen={paperStylePopoverOpen}
+                  setPaperStylePopoverOpen={setPaperStylePopoverOpen}
+                  paperStyleOptions={paperStyleOptions}
+                  borderStyleOptions={borderStyleOptions}
+                  letterStyle={letterStyle}
+                  updateLetterStyle={updateLetterStyle}
+                />
                 
-                <CardContent className="pt-6">
-                  <LetterContentEditor 
-                    subject={subject}
-                    setSubject={setSubject}
-                    content={content}
-                    setContent={setContent}
-                    textareaRef={textareaRef}
-                    documentStyle={documentStyle}
-                    inlineStyles={inlineStyles}
-                    letterStyle={letterStyle}
-                    selectionRange={selectionRange}
-                    activeTextFormat={activeTextFormat}
-                    fontOptions={fontOptions}
-                    fontSizeOptions={fontSizeOptions}
-                    colorOptions={colorOptions}
-                    paperStyleOptions={paperStyleOptions}
-                    borderStyleOptions={borderStyleOptions}
-                    applyFormatting={applyFormatting}
-                    updateLetterStyle={updateLetterStyle}
-                    handleInsertQuote={handleInsertQuote}
-                    scrollToQuoteInConversation={scrollToQuoteInConversation}
-                    conversation={conversation}
-                    shouldShowConversation={shouldShowConversation}
-                    linkPopoverOpen={linkPopoverOpen}
-                    setLinkPopoverOpen={setLinkPopoverOpen}
-                    stylePopoverOpen={stylePopoverOpen}
-                    setStylePopoverOpen={setStylePopoverOpen}
-                    paperStylePopoverOpen={paperStylePopoverOpen}
-                    setPaperStylePopoverOpen={setPaperStylePopoverOpen}
-                    linkText={linkText}
-                    setLinkText={setLinkText}
-                    linkUrl={linkUrl}
-                    setLinkUrl={setLinkUrl}
-                    insertLink={insertLink}
-                    isSaving={isSaving}
-                    lastSaved={lastSaved}
-                    formatLastSaved={formatLastSaved}
-                    handleAutoSave={handleAutoSave}
-                    handleSend={handleSend}
-                  />
-                </CardContent>
-              </Card>
-            </div>
-            
-            {/* Conversation History Column - Now comes second in side-by-side mode */}
-            {shouldShowConversation && (viewMode === 'side-by-side' || viewMode === 'overlay') && (
-              <div className={`space-y-4 ${viewMode === 'overlay' ? 'absolute inset-0 z-0 opacity-15 pointer-events-none' : ''} ${viewMode === 'side-by-side' ? 'order-1 md:order-2' : ''}`}>
-                {viewMode === 'side-by-side' && (
-                  <h2 className="text-lg font-medium font-serif">Conversation History</h2>
-                )}
-                
-                <ConversationHistory 
-                  conversation={conversation}
-                  activeMessageId={activeQuoteId}
-                  onScrollToQuote={scrollToQuoteInConversation}
-                  viewMode={viewMode}
-                  showComposeButton={viewMode !== 'side-by-side'}
-                  expandable={viewMode === 'side-by-side'}
+                <LinkPopover
+                  linkPopoverOpen={linkPopoverOpen}
+                  setLinkPopoverOpen={setLinkPopoverOpen}
+                  selectionRange={selectionRange}
+                  linkUrl={linkUrl}
+                  setLinkUrl={setLinkUrl}
+                  linkText={linkText}
+                  setLinkText={setLinkText}
+                  onInsertLink={insertLink}
                 />
               </div>
-            )}
+              
+              {/* Letter preview */}
+              {content && (
+                <Card className={`${letterStyle.paperStyle} ${letterStyle.borderStyle}`}>
+                  <CardContent className="p-4 md:p-6">
+                    <LetterPreview
+                      content={content}
+                      documentStyle={documentStyle}
+                      inlineStyles={inlineStyles}
+                      scrollToQuoteInConversation={scrollToQuoteInConversation}
+                      timestamp={new Date().toISOString()}
+                    />
+                  </CardContent>
+                </Card>
+              )}
+              
+              {/* Message input */}
+              <ChatMessageInput 
+                content={content}
+                setContent={setContent}
+                textareaRef={textareaRef}
+                selectionRange={selectionRange}
+                activeTextFormat={activeTextFormat}
+                fontOptions={fontOptions}
+                fontSizeOptions={fontSizeOptions}
+                colorOptions={colorOptions}
+                stylePopoverOpen={stylePopoverOpen}
+                setStylePopoverOpen={setStylePopoverOpen}
+                applyFormatting={applyFormatting}
+                handleSend={handleSend}
+              />
+              
+              {/* Display conversation messages */}
+              {isInConversationContext && viewMode === 'side-by-side' && (
+                <div className="mt-6 space-y-6">
+                  {conversation.slice(Math.max(0, conversation.length - 3)).map((message) => (
+                    <LetterContent
+                      key={message.id}
+                      content={message.content}
+                      showContent={true}
+                      isYourMessage={message.sender.isYou}
+                      sender={{
+                        id: message.id,
+                        username: message.sender.name,
+                      }}
+                      timestamp={message.date}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </main>

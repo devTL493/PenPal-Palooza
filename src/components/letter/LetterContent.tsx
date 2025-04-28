@@ -1,17 +1,24 @@
 
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { UserProfile } from '@/types/letter';
 
 interface LetterContentProps {
   content: string;
   preview?: string;
   showContent: boolean;
+  sender?: UserProfile;
+  timestamp?: string;
+  isYourMessage?: boolean;
 }
 
 const LetterContent: React.FC<LetterContentProps> = ({ 
   content, 
   preview, 
-  showContent 
+  showContent,
+  sender,
+  timestamp,
+  isYourMessage = false
 }) => {
   if (!showContent) return null;
   
@@ -23,8 +30,16 @@ const LetterContent: React.FC<LetterContentProps> = ({
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
       >
-        <div className="paper p-8 border rounded-md mb-6 whitespace-pre-line font-serif a4-paper">
-          {content || preview}
+        <div className={`p-6 rounded-lg mb-6 whitespace-pre-line ${isYourMessage ? 'bg-primary/10 ml-8' : 'bg-paper border mr-8'}`}>
+          {sender && (
+            <div className="flex items-center mb-2">
+              <div className="font-medium">{sender.username || 'Anonymous'}</div>
+              {timestamp && <div className="text-xs text-muted-foreground ml-2">{timestamp}</div>}
+            </div>
+          )}
+          <div className="font-serif">
+            {content || preview}
+          </div>
         </div>
       </motion.div>
     </AnimatePresence>
