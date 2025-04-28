@@ -9,16 +9,21 @@ import {
   MapPin, 
   Mail, 
   User,
+  Check,
+  Clock,
+  X
 } from 'lucide-react';
 
 export interface PenPalCardProps {
   id: string;
-  name: string;
+  name?: string;
+  username: string;
   avatar?: string;
   location?: string;
   interests: string[];
   letterCount?: number;
   isConnected?: boolean;
+  connectionStatus?: 'pending' | 'accepted' | 'declined';
   onClick?: () => void;
   onConnect?: () => void;
   className?: string;
@@ -27,15 +32,19 @@ export interface PenPalCardProps {
 const PenPalCard: React.FC<PenPalCardProps> = ({
   id,
   name,
+  username,
   avatar,
   location,
   interests,
   letterCount = 0,
   isConnected = false,
+  connectionStatus,
   onClick,
   onConnect,
   className,
 }) => {
+  const displayName = name || username;
+  
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -55,7 +64,7 @@ const PenPalCard: React.FC<PenPalCardProps> = ({
                 <div className="relative h-12 w-12 rounded-full overflow-hidden border border-border shadow-sm">
                   <img 
                     src={avatar} 
-                    alt={name}
+                    alt={displayName}
                     className="object-cover w-full h-full"
                     loading="lazy"
                     onLoad={(e) => e.currentTarget.parentElement?.classList.remove('image-loading')}
@@ -63,18 +72,23 @@ const PenPalCard: React.FC<PenPalCardProps> = ({
                 </div>
               ) : (
                 <div className="flex items-center justify-center h-12 w-12 rounded-full bg-primary/10 text-primary">
-                  {name.charAt(0).toUpperCase()}
+                  {displayName.charAt(0).toUpperCase()}
                 </div>
               )}
               
               <div>
-                <h3 className="font-serif font-medium text-foreground">{name}</h3>
-                {location && (
-                  <div className="flex items-center text-xs text-muted-foreground mt-0.5">
-                    <MapPin className="h-3 w-3 mr-1" aria-hidden="true" />
-                    <span>{location}</span>
-                  </div>
-                )}
+                <h3 className="font-serif font-medium text-foreground">{displayName}</h3>
+                <div className="flex items-center text-xs text-muted-foreground mt-0.5">
+                  {username && (
+                    <span className="mr-2">@{username}</span>
+                  )}
+                  {location && (
+                    <>
+                      <MapPin className="h-3 w-3 mr-1" aria-hidden="true" />
+                      <span>{location}</span>
+                    </>
+                  )}
+                </div>
               </div>
             </div>
             
@@ -105,7 +119,27 @@ const PenPalCard: React.FC<PenPalCardProps> = ({
               View Profile
             </Button>
             
-            {!isConnected ? (
+            {connectionStatus === 'pending' ? (
+              <Button 
+                size="sm" 
+                variant="secondary"
+                className="w-full"
+                disabled
+              >
+                <Clock className="h-4 w-4 mr-2" />
+                Pending
+              </Button>
+            ) : connectionStatus === 'declined' ? (
+              <Button 
+                size="sm" 
+                variant="outline"
+                className="w-full border-destructive/40 text-destructive"
+                disabled
+              >
+                <X className="h-4 w-4 mr-2" />
+                Declined
+              </Button>
+            ) : !isConnected ? (
               <Button 
                 size="sm" 
                 className="w-full"
@@ -121,7 +155,7 @@ const PenPalCard: React.FC<PenPalCardProps> = ({
                 className="w-full"
                 onClick={onConnect}
               >
-                <Mail className="h-4 w-4 mr-2" />
+                <Check className="h-4 w-4 mr-2" />
                 Write Letter
               </Button>
             )}

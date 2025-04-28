@@ -4,11 +4,22 @@ import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
+interface UserProfile {
+  id: string;
+  username: string;
+  full_name?: string;
+  avatar_url?: string;
+  location?: string;
+  bio?: string;
+}
+
 interface AuthContextProps {
   session: Session | null;
   user: User | null;
+  profile: UserProfile | null;
   signOut: () => Promise<void>;
   loading: boolean;
+  updateProfile: (updates: Partial<UserProfile>) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextProps | undefined>(undefined);
@@ -16,8 +27,60 @@ const AuthContext = createContext<AuthContextProps | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+
+  // Fetch profile data
+  const fetchProfile = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+
+      if (error) {
+        throw error;
+      }
+
+      if (data) {
+        setProfile(data as UserProfile);
+      }
+    } catch (error) {
+      console.error('Error fetching profile:', error);
+    }
+  };
+
+  // Update user profile
+  const updateProfile = async (updates: Partial<UserProfile>) => {
+    if (!user) return;
+    
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update(updates)
+        .eq('id', user.id);
+
+      if (error) {
+        throw error;
+      }
+
+      setProfile(prev => prev ? { ...prev, ...updates } : null);
+      
+      toast({
+        title: "Profile updated",
+        description: "Your profile has been updated successfully.",
+      });
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      toast({
+        title: "Update failed",
+        description: error.message || "Failed to update profile",
+        variant: "destructive"
+      });
+    }
+  };
 
   useEffect(() => {
     // Set up auth state listener FIRST to avoid missing auth events
@@ -25,6 +88,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       (event, currentSession) => {
         setSession(currentSession);
         setUser(currentSession?.user ?? null);
+
+        // Fetch profile on auth state change
+        if (currentSession?.user) {
+          // Use setTimeout to avoid potential deadlocks with Supabase client
+          setTimeout(() => {
+            fetchProfile(currentSession.user.id);
+          }, 0);
+        } else {
+          setProfile(null);
+        }
 
         // Show toast for sign in/out events
         if (event === 'SIGNED_IN') {
@@ -48,6 +121,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
       setSession(currentSession);
       setUser(currentSession?.user ?? null);
+      
+      if (currentSession?.user) {
+        fetchProfile(currentSession.user.id);
+      }
+      
       setLoading(false);
     });
 
@@ -63,8 +141,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const value = {
     session,
     user,
+    profile,
     signOut,
-    loading
+    loading,
+    updateProfile
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

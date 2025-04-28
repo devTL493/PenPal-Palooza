@@ -10,7 +10,9 @@ import {
   Home, 
   Mail, 
   LogOut, 
-  PenTool
+  PenTool,
+  Settings,
+  UserPlus
 } from 'lucide-react';
 import { cn } from "@/lib/utils";
 import { 
@@ -27,14 +29,57 @@ import {
   useSidebarContext
 } from "@/components/ui/sidebar";
 import { useAuth } from '@/contexts/AuthContext';
-
-// Sample unread count - in a real app, this would come from context/state
-const unreadCount = 1;
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useEffect, useState } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 
 export function AppSidebar() {
   const location = useLocation();
-  const { user, signOut } = useAuth();
+  const { user, profile, signOut } = useAuth();
   const { expanded } = useSidebarContext();
+  const [unreadCount, setUnreadCount] = useState(0);
+  
+  // Fetch unread message count
+  useEffect(() => {
+    const fetchUnreadCount = async () => {
+      if (!user) {
+        setUnreadCount(0);
+        return;
+      }
+      
+      try {
+        const { count, error } = await supabase
+          .from('letters')
+          .select('*', { count: 'exact', head: true })
+          .eq('recipient_id', user.id)
+          .eq('is_read', false);
+          
+        if (error) throw error;
+        setUnreadCount(count || 0);
+      } catch (error) {
+        console.error('Error fetching unread count:', error);
+      }
+    };
+    
+    fetchUnreadCount();
+    
+    // Set up subscription for real-time updates
+    const channel = supabase
+      .channel('public:letters')
+      .on('postgres_changes', 
+        { event: 'INSERT', schema: 'public', table: 'letters', filter: `recipient_id=eq.${user?.id}` },
+        () => fetchUnreadCount()
+      )
+      .on('postgres_changes', 
+        { event: 'UPDATE', schema: 'public', table: 'letters', filter: `recipient_id=eq.${user?.id}` },
+        () => fetchUnreadCount()
+      )
+      .subscribe();
+      
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user]);
 
   // Define navigation items based on auth status
   const navItems = user ? [
@@ -63,6 +108,17 @@ export function AppSidebar() {
     await signOut();
   };
 
+  const getUserInitial = () => {
+    if (profile?.full_name) {
+      return profile.full_name.charAt(0).toUpperCase();
+    } else if (profile?.username) {
+      return profile.username.charAt(0).toUpperCase();
+    } else if (user?.email) {
+      return user.email.charAt(0).toUpperCase();
+    }
+    return 'U';
+  };
+
   return (
     <Sidebar>
       <SidebarHeader>
@@ -73,6 +129,23 @@ export function AppSidebar() {
       </SidebarHeader>
       
       <SidebarContent>
+        {user && expanded && (
+          <div className="mb-6 px-2 py-1.5">
+            <div className="flex items-center space-x-2">
+              <Avatar className="h-9 w-9">
+                {profile?.avatar_url && (
+                  <AvatarImage src={profile.avatar_url} alt={profile.username || "User"} />
+                )}
+                <AvatarFallback>{getUserInitial()}</AvatarFallback>
+              </Avatar>
+              <div className="flex-1 overflow-hidden">
+                <p className="font-medium truncate">{profile?.full_name || profile?.username || "User"}</p>
+                <p className="text-xs text-muted-foreground truncate">{profile?.username || user.email}</p>
+              </div>
+            </div>
+          </div>
+        )}
+        
         <SidebarGroup>
           {expanded && <SidebarGroupLabel>Navigation</SidebarGroupLabel>}
           <SidebarGroupContent>
@@ -102,6 +175,20 @@ export function AppSidebar() {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
+              
+              {!user && (
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild>
+                    <Link to="/auth" className={cn(
+                      "flex items-center",
+                      expanded ? "justify-start space-x-3" : "justify-center"
+                    )}>
+                      <UserPlus className="h-4 w-4" />
+                      {expanded && <span>Sign In</span>}
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              )}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

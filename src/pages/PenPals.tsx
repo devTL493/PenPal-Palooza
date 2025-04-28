@@ -1,6 +1,4 @@
-
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import PenPalCard from '@/components/PenPalCard';
@@ -11,62 +9,19 @@ import {
   Filter,
   ArrowDownAZ,
   ArrowUpAZ,
+  Loader2
 } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
-
-// Sample pen pal data
-const samplePenPals = [
-  {
-    id: '1',
-    name: 'Emily Chen',
-    avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=256&auto=format&fit=crop',
-    location: 'Tokyo, Japan',
-    interests: ['Literature', 'Travel', 'Art'],
-    letterCount: 5,
-    isConnected: true,
-  },
-  {
-    id: '2',
-    name: 'Marcus Johnson',
-    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=256&auto=format&fit=crop',
-    location: 'London, UK',
-    interests: ['Philosophy', 'History', 'Music'],
-    letterCount: 3,
-    isConnected: true,
-  },
-  {
-    id: '3',
-    name: 'Sophia Williams',
-    location: 'Paris, France',
-    interests: ['Fashion', 'Photography', 'Cooking'],
-    letterCount: 0,
-    isConnected: false,
-  },
-  {
-    id: '4',
-    name: 'David Kim',
-    avatar: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?q=80&w=256&auto=format&fit=crop',
-    location: 'Melbourne, Australia',
-    interests: ['Nature', 'Travel', 'Technology'],
-    letterCount: 0,
-    isConnected: false,
-  },
-  {
-    id: '5',
-    name: 'Olivia Brown',
-    avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?q=80&w=256&auto=format&fit=crop',
-    location: 'Berlin, Germany',
-    interests: ['Music', 'Architecture', 'Films'],
-    letterCount: 0,
-    isConnected: false,
-  },
-];
+import { usePenPals } from '@/hooks/usePenPals';
+import { useAuth } from '@/contexts/AuthContext';
+import FloatingComposeButton from '@/components/letter/FloatingComposeButton';
 
 const PenPals = () => {
   const { toast } = useToast();
+  const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
-  const [penPals, setPenPals] = useState(samplePenPals);
+  const { penPals, loading, error, connectWithPenPal } = usePenPals();
   
   const toggleSortOrder = () => {
     setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
@@ -75,40 +30,45 @@ const PenPals = () => {
   // Filter and sort pen pals
   const filteredAndSortedPenPals = [...penPals]
     .filter(penpal => 
-      penpal.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      penpal.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      penpal.username?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       penpal.location?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       penpal.interests.some(interest => 
         interest.toLowerCase().includes(searchQuery.toLowerCase())
       )
     )
     .sort((a, b) => {
+      const nameA = a.name || a.username;
+      const nameB = b.name || b.username;
+      
       if (sortOrder === 'asc') {
-        return a.name.localeCompare(b.name);
+        return nameA.localeCompare(nameB);
       } else {
-        return b.name.localeCompare(a.name);
+        return nameB.localeCompare(nameA);
       }
     });
   
-  const handleConnect = (penPalId: string) => {
-    setPenPals(penPals.map(penpal => 
-      penpal.id === penPalId 
-        ? {...penpal, isConnected: !penpal.isConnected} 
-        : penpal
-    ));
-
-    const penPal = penPals.find(pp => pp.id === penPalId);
-    if (penPal) {
-      if (!penPal.isConnected) {
-        toast({
-          title: `Connected with ${penPal.name}`,
-          description: "You can now exchange letters with this pen pal.",
-        });
-      } else {
-        toast({
-          description: `Writing a letter to ${penPal.name}`,
-        });
-      }
+  const handleConnect = async (penPalId: string) => {
+    if (!user) {
+      toast({
+        title: "Authentication required",
+        description: "Please sign in to connect with pen pals",
+      });
+      return;
     }
+    
+    const penPal = penPals.find(pp => pp.id === penPalId);
+    
+    // If already connected, let's write a letter
+    if (penPal?.isConnected) {
+      toast({
+        description: `Writing a letter to ${penPal.name}`,
+      });
+      return;
+    }
+    
+    // Otherwise, send connection request
+    await connectWithPenPal(penPalId);
   };
   
   const handleViewProfile = (penPalId: string) => {
@@ -151,7 +111,23 @@ const PenPals = () => {
             />
           </div>
           
-          {filteredAndSortedPenPals.length > 0 ? (
+          {loading ? (
+            <div className="text-center py-16">
+              <Loader2 className="h-8 w-8 mx-auto text-primary animate-spin" />
+              <p className="mt-4 text-lg font-medium">Loading pen pals...</p>
+            </div>
+          ) : error ? (
+            <div className="text-center py-16">
+              <p className="text-destructive">{error}</p>
+              <Button 
+                variant="outline" 
+                className="mt-4"
+                onClick={() => window.location.reload()}
+              >
+                Try Again
+              </Button>
+            </div>
+          ) : filteredAndSortedPenPals.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredAndSortedPenPals.map((penpal) => (
                 <PenPalCard
@@ -167,7 +143,9 @@ const PenPals = () => {
               <Users className="h-16 w-16 mx-auto text-muted-foreground opacity-50" />
               <h3 className="mt-4 text-xl font-medium">No pen pals found</h3>
               <p className="mt-2 text-muted-foreground max-w-md mx-auto">
-                We couldn't find any pen pals matching your search. Try adjusting your search criteria.
+                {searchQuery 
+                  ? "We couldn't find any pen pals matching your search. Try adjusting your search criteria."
+                  : "There are no other users registered yet. Be the first to invite your friends!"}
               </p>
               {searchQuery && (
                 <Button 
@@ -182,6 +160,8 @@ const PenPals = () => {
           )}
         </div>
       </main>
+      
+      <FloatingComposeButton />
     </div>
   );
 };
