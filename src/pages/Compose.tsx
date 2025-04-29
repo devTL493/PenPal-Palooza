@@ -7,11 +7,10 @@ import { Button } from "@/components/ui/button";
 import Navigation from '@/components/Navigation';
 import ComposeViewOption, { ComposeViewMode } from '@/components/letter/ComposeViewOption';
 import SplitPanelLayout from '@/components/letter/SplitPanelLayout';
-import { ConversationMessage, UserProfile } from '@/types/letter';
 import { useAuth } from '@/contexts/AuthContext';
 import ComposeMainContent from '@/components/compose/ComposeMainContent';
 import useComposeState from '@/hooks/useComposeState';
-import { samplePenPals, sampleConversation } from '@/data/sampleData';
+import ConversationHistory from '@/components/letter/ConversationHistory';
 
 const Compose = () => {
   const { toast } = useToast();
@@ -150,10 +149,17 @@ const Compose = () => {
           {/* Split panel layout for wide screens */}
           {isWideScreen && shouldShowConversation && viewMode === 'side-by-side' ? (
             <SplitPanelLayout
-              composerPanel={renderComposerPanel()}
-              conversationPanel={renderConversationPanel()}
+              leftPanel={{
+                content: isPanelReversed ? renderConversationPanel() : renderComposerPanel(),
+                config: { defaultSize: 40, minSize: 30, maxSize: 70 }
+              }}
+              rightPanel={{
+                content: isPanelReversed ? renderComposerPanel() : renderConversationPanel(),
+                config: { defaultSize: 60, minSize: 30, maxSize: 70 }
+              }}
               isReversed={isPanelReversed}
               onToggleLayout={togglePanelPosition}
+              className="h-[calc(100vh-120px)]"
             />
           ) : (
             <div className="space-y-6">

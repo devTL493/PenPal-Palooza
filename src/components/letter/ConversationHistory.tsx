@@ -99,7 +99,7 @@ const ConversationHistory: React.FC<ConversationHistoryProps> = ({
         </div>
         
         <div className="flex items-center gap-2">
-          {conversationId && (
+          {conversation[0]?.id && (
             <a 
               href={`/conversation/${conversation[0]?.id}`} 
               target="_blank" 
