@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { 
@@ -19,17 +20,10 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useLocation } from 'react-router-dom';
+import { ConversationMessage } from '@/types/letter';
 
 interface ConversationHistoryProps {
-  conversation: Array<{
-    id: string;
-    sender: {
-      name: string;
-      isYou?: boolean;
-    };
-    content: string;
-    date: string;
-  }>;
+  conversation: ConversationMessage[];
   activeMessageId?: string;
   onScrollToQuote?: (quoteId: string) => void;
   onDeleteConversation?: () => void;
@@ -93,11 +87,6 @@ const ConversationHistory: React.FC<ConversationHistoryProps> = ({
     return null;
   }
 
-  // Find the last message from the other person (not you)
-  const lastSender = conversation
-    .filter(msg => !msg.sender.isYou)
-    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
-
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -110,16 +99,18 @@ const ConversationHistory: React.FC<ConversationHistoryProps> = ({
         </div>
         
         <div className="flex items-center gap-2">
-          <a 
-            href={`/conversation/${conversation[0]?.id}`} 
-            target="_blank" 
-            rel="noopener noreferrer" 
-            className="flex items-center"
-          >
-            <Button variant="outline" size="icon" title="View full conversation history">
-              <ExternalLink className="h-4 w-4" />
-            </Button>
-          </a>
+          {conversationId && (
+            <a 
+              href={`/conversation/${conversation[0]?.id}`} 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              className="flex items-center"
+            >
+              <Button variant="outline" size="icon" title="View full conversation history">
+                <ExternalLink className="h-4 w-4" />
+              </Button>
+            </a>
+          )}
           
           {/* Only show delete button on the conversation page */}
           {isConversationPage && (
@@ -141,7 +132,7 @@ const ConversationHistory: React.FC<ConversationHistoryProps> = ({
         className="max-h-[calc(100vh-200px)] overflow-y-auto border rounded-md p-4"
       >
         <div className="space-y-4">
-          {conversation.map((message, index) => (
+          {conversation.map((message) => (
             <div key={message.id} className="flex flex-col gap-2">
               <div className="flex justify-between items-start gap-2">
                 <div className="flex-1">
@@ -153,8 +144,6 @@ const ConversationHistory: React.FC<ConversationHistoryProps> = ({
                   />
                 </div>
               </div>
-              
-              {/* Compose button in conversation history removed */}
             </div>
           ))}
         </div>
