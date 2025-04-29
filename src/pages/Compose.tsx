@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { useSearchParams, useNavigate, useParams } from 'react-router-dom';
 import { useToast } from "@/hooks/use-toast";
@@ -16,12 +17,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import Navigation from '@/components/Navigation';
-import { ArrowLeft, Send } from 'lucide-react';
+import { ArrowLeft, Send, MonitorIcon, SmartphoneIcon } from 'lucide-react';
 import ComposeViewOption, { ComposeViewMode } from '@/components/letter/ComposeViewOption';
 import ConversationHistory from '@/components/letter/ConversationHistory';
 import ChatMessageInput from '@/components/letter/ChatMessageInput';
 import LetterPreview from '@/components/letter/LetterPreview';
 import LetterContent from '@/components/letter/LetterContent';
+import SplitPanelLayout from '@/components/letter/SplitPanelLayout';
 import useTextSelection from '@/hooks/useTextSelection';
 import useLetterSave from '@/hooks/useLetterSave';
 import { InlineStyle, LetterStyle, TextAlignment, ConversationMessage, UserProfile } from '@/types/letter';
@@ -131,6 +133,10 @@ const Compose = () => {
   const [conversation, setConversation] = useState<ConversationMessage[]>([]);
   const [isInConversationContext, setIsInConversationContext] = useState(!!conversationId);
   
+  // Panel layout state
+  const [isPanelReversed, setIsPanelReversed] = useState(false);
+  const [isWideScreen, setIsWideScreen] = useState(window.innerWidth >= 1024);
+  
   // Style for the whole document
   const [documentStyle, setDocumentStyle] = useState({
     font: 'font-serif',
@@ -182,6 +188,18 @@ const Compose = () => {
     inlineStyles, 
     letterStyle 
   });
+
+  // Track screen size for responsive design
+  useEffect(() => {
+    const handleResize = () => {
+      setIsWideScreen(window.innerWidth >= 1024);
+    };
+    
+    window.addEventListener('resize', handleResize);
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
+  }, []);
 
   // Fetch conversation messages when in conversation context
   useEffect(() => {
@@ -458,7 +476,12 @@ const Compose = () => {
     setActiveQuoteId(quoteId);
   };
 
-  // Add the missing updateLetterStyle function
+  // Function to switch panel positions
+  const togglePanelPosition = () => {
+    setIsPanelReversed(prev => !prev);
+  };
+  
+  // Add the updateLetterStyle function
   const updateLetterStyle = (type: 'paperStyle' | 'borderStyle', value: string) => {
     setLetterStyle(prev => ({
       ...prev,
@@ -466,13 +489,120 @@ const Compose = () => {
     }));
   };
 
+  // Render the composer panel
+  const renderComposerPanel = () => (
+    <div className="p-4 flex flex-col h-full overflow-y-auto">
+      <div className="mb-4">
+        <h2 className="text-lg font-semibold mb-2">Compose Letter</h2>
+        {!isInConversationContext && (
+          <div className="space-y-4 mb-4">
+            <div>
+              <Select value={recipient} onValueChange={setRecipient}>
+                <SelectTrigger id="recipient">
+                  <SelectValue placeholder="Select recipient..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {samplePenPals.map((penpal) => (
+                    <SelectItem key={penpal.id} value={penpal.id}>
+                      {penpal.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div>
+              <Input
+                id="subject"
+                placeholder="Subject"
+                value={subject}
+                onChange={(e) => setSubject(e.target.value)}
+                className="font-medium"
+              />
+            </div>
+          </div>
+        )}
+      </div>
+      
+      {/* Styling options */}
+      <div className="flex items-center gap-2 mb-4">
+        <PaperStylePopover
+          paperStylePopoverOpen={paperStylePopoverOpen}
+          setPaperStylePopoverOpen={setPaperStylePopoverOpen}
+          paperStyleOptions={paperStyleOptions}
+          borderStyleOptions={borderStyleOptions}
+          letterStyle={letterStyle}
+          updateLetterStyle={updateLetterStyle}
+        />
+        
+        <LinkPopover
+          linkPopoverOpen={linkPopoverOpen}
+          setLinkPopoverOpen={setLinkPopoverOpen}
+          selectionRange={selectionRange}
+          linkUrl={linkUrl}
+          setLinkUrl={setLinkUrl}
+          linkText={linkText}
+          setLinkText={setLinkText}
+          onInsertLink={insertLink}
+        />
+      </div>
+      
+      {/* Letter preview */}
+      {content && (
+        <Card className={`${letterStyle.paperStyle} ${letterStyle.borderStyle} mb-4`}>
+          <CardContent className="p-4 md:p-6">
+            <LetterPreview
+              content={content}
+              documentStyle={documentStyle}
+              inlineStyles={inlineStyles}
+              scrollToQuoteInConversation={scrollToQuoteInConversation}
+              timestamp={new Date().toISOString()}
+            />
+          </CardContent>
+        </Card>
+      )}
+      
+      {/* Message input */}
+      <ChatMessageInput 
+        content={content}
+        setContent={setContent}
+        textareaRef={textareaRef}
+        selectionRange={selectionRange}
+        activeTextFormat={activeTextFormat}
+        fontOptions={fontOptions}
+        fontSizeOptions={fontSizeOptions}
+        colorOptions={colorOptions}
+        stylePopoverOpen={stylePopoverOpen}
+        setStylePopoverOpen={setStylePopoverOpen}
+        applyFormatting={applyFormatting}
+        handleSend={handleSend}
+      />
+    </div>
+  );
+
+  // Render the conversation panel
+  const renderConversationPanel = () => (
+    <div className="p-4 h-full overflow-y-auto">
+      <h2 className="text-lg font-semibold mb-4">Conversation with {recipientName}</h2>
+      
+      <ConversationHistory 
+        conversation={conversation}
+        activeMessageId={activeQuoteId}
+        onScrollToQuote={scrollToQuoteInConversation}
+        viewMode={viewMode}
+        showComposeButton={false}
+        expandable={true}
+      />
+    </div>
+  );
+
   return (
     <div className="min-h-screen bg-background">
       <Navigation />
       
-      <main className={`w-full px-4 pt-24 pb-16 ${viewMode === 'overlay' && shouldShowConversation ? 'relative' : ''}`}>
-        <div className="w-full mx-auto">
-          <div className="flex justify-between items-center mb-6 max-w-screen-2xl mx-auto">
+      <main className="w-full px-4 pt-24 pb-16">
+        <div className="w-full max-w-screen-2xl mx-auto">
+          <div className="flex justify-between items-center mb-6">
             <div className="flex items-center">
               <Button variant="ghost" onClick={() => navigate(-1)} className="mr-2">
                 <ArrowLeft className="h-4 w-4 mr-2" />
@@ -485,143 +615,80 @@ const Compose = () => {
               </h1>
             </div>
             
-            {conversation.length > 0 && (
-              <ComposeViewOption
-                currentMode={viewMode}
-                onModeChange={setViewMode}
-                recipientId={recipient}
-              />
-            )}
+            <div className="flex items-center gap-2">
+              {conversation.length > 0 && (
+                <ComposeViewOption
+                  currentMode={viewMode}
+                  onModeChange={setViewMode}
+                  recipientId={recipient}
+                />
+              )}
+              
+              {/* Toggle for the responsive view */}
+              <div className="flex border rounded-md overflow-hidden">
+                <Button
+                  variant={isWideScreen ? "default" : "outline"}
+                  size="sm"
+                  className="rounded-none"
+                  onClick={() => setIsWideScreen(true)}
+                >
+                  <MonitorIcon className="h-4 w-4 mr-1" />
+                  <span className="hidden sm:inline">Desktop</span>
+                </Button>
+                <Button
+                  variant={!isWideScreen ? "default" : "outline"}
+                  size="sm"
+                  className="rounded-none"
+                  onClick={() => setIsWideScreen(false)}
+                >
+                  <SmartphoneIcon className="h-4 w-4 mr-1" />
+                  <span className="hidden sm:inline">Mobile</span>
+                </Button>
+              </div>
+            </div>
           </div>
           
-          <div className={`max-w-screen-2xl mx-auto ${viewMode === 'side-by-side' ? 'grid grid-cols-1 lg:grid-cols-5 gap-6' : ''}`}>
-            {/* Conversation History Column */}
-            {shouldShowConversation && (viewMode === 'side-by-side' || viewMode === 'overlay') && (
-              <div className={`space-y-4 ${viewMode === 'overlay' ? 'absolute inset-0 z-0 opacity-15 pointer-events-none' : ''} ${viewMode === 'side-by-side' ? 'lg:col-span-2 order-first' : ''}`}>
-                {viewMode === 'side-by-side' && (
-                  <h2 className="text-lg font-medium font-serif">Correspondence History</h2>
+          {/* Split panel layout for wide screens */}
+          {isWideScreen && shouldShowConversation && viewMode === 'side-by-side' ? (
+            <SplitPanelLayout
+              composerPanel={renderComposerPanel()}
+              conversationPanel={renderConversationPanel()}
+              isReversed={isPanelReversed}
+              onToggleLayout={togglePanelPosition}
+            />
+          ) : (
+            <div className="space-y-6">
+              {/* Original layout for mobile view */}
+              <div className={`${viewMode === 'overlay' && shouldShowConversation ? 'relative' : ''}`}>
+                {/* Conversation History (Overlay or side-by-side) */}
+                {shouldShowConversation && (viewMode === 'overlay') && (
+                  <div className="absolute inset-0 z-0 opacity-15 pointer-events-none">
+                    <ConversationHistory 
+                      conversation={conversation}
+                      activeMessageId={activeQuoteId}
+                      onScrollToQuote={scrollToQuoteInConversation}
+                      viewMode={viewMode}
+                      showComposeButton={false}
+                      expandable={false}
+                    />
+                  </div>
                 )}
                 
-                <ConversationHistory 
-                  conversation={conversation}
-                  activeMessageId={activeQuoteId}
-                  onScrollToQuote={scrollToQuoteInConversation}
-                  viewMode={viewMode}
-                  showComposeButton={viewMode !== 'side-by-side'}
-                  expandable={viewMode === 'side-by-side'}
-                />
-              </div>
-            )}
-            
-            {/* Letter Compose Area */}
-            <div className={`space-y-4 ${viewMode === 'overlay' ? 'relative z-10' : ''} ${viewMode === 'side-by-side' ? 'lg:col-span-3' : ''}`}>
-              {!isInConversationContext && (
-                <Card>
-                  <CardHeader>
-                    <div className="space-y-4">
-                      <div>
-                        <Select value={recipient} onValueChange={setRecipient}>
-                          <SelectTrigger id="recipient">
-                            <SelectValue placeholder="Select recipient..." />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {samplePenPals.map((penpal) => (
-                              <SelectItem key={penpal.id} value={penpal.id}>
-                                {penpal.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      
-                      <div>
-                        <Input
-                          id="subject"
-                          placeholder="Subject"
-                          value={subject}
-                          onChange={(e) => setSubject(e.target.value)}
-                          className="font-medium"
-                        />
-                      </div>
-                    </div>
-                  </CardHeader>
-                </Card>
-              )}
-
-              {/* Styling options */}
-              <div className="flex items-center gap-2">
-                <PaperStylePopover
-                  paperStylePopoverOpen={paperStylePopoverOpen}
-                  setPaperStylePopoverOpen={setPaperStylePopoverOpen}
-                  paperStyleOptions={paperStyleOptions}
-                  borderStyleOptions={borderStyleOptions}
-                  letterStyle={letterStyle}
-                  updateLetterStyle={updateLetterStyle}
-                />
-                
-                <LinkPopover
-                  linkPopoverOpen={linkPopoverOpen}
-                  setLinkPopoverOpen={setLinkPopoverOpen}
-                  selectionRange={selectionRange}
-                  linkUrl={linkUrl}
-                  setLinkUrl={setLinkUrl}
-                  linkText={linkText}
-                  setLinkText={setLinkText}
-                  onInsertLink={insertLink}
-                />
+                {/* Letter Compose Area */}
+                <div className={viewMode === 'overlay' ? 'relative z-10' : ''}>
+                  {renderComposerPanel()}
+                </div>
               </div>
               
-              {/* Letter preview */}
-              {content && (
-                <Card className={`${letterStyle.paperStyle} ${letterStyle.borderStyle}`}>
-                  <CardContent className="p-4 md:p-6">
-                    <LetterPreview
-                      content={content}
-                      documentStyle={documentStyle}
-                      inlineStyles={inlineStyles}
-                      scrollToQuoteInConversation={scrollToQuoteInConversation}
-                      timestamp={new Date().toISOString()}
-                    />
-                  </CardContent>
-                </Card>
-              )}
-              
-              {/* Message input */}
-              <ChatMessageInput 
-                content={content}
-                setContent={setContent}
-                textareaRef={textareaRef}
-                selectionRange={selectionRange}
-                activeTextFormat={activeTextFormat}
-                fontOptions={fontOptions}
-                fontSizeOptions={fontSizeOptions}
-                colorOptions={colorOptions}
-                stylePopoverOpen={stylePopoverOpen}
-                setStylePopoverOpen={setStylePopoverOpen}
-                applyFormatting={applyFormatting}
-                handleSend={handleSend}
-              />
-              
-              {/* Display conversation messages */}
-              {isInConversationContext && viewMode === 'side-by-side' && (
+              {/* Display conversation messages in side-by-side mode (mobile) */}
+              {shouldShowConversation && viewMode === 'side-by-side' && !isWideScreen && (
                 <div className="mt-6 space-y-6">
-                  {conversation.slice(Math.max(0, conversation.length - 3)).map((message) => (
-                    <LetterContent
-                      key={message.id}
-                      content={message.content}
-                      showContent={true}
-                      isYourMessage={message.sender.isYou}
-                      sender={{
-                        id: message.id,
-                        username: message.sender.name,
-                      }}
-                      timestamp={message.date}
-                    />
-                  ))}
+                  <h2 className="text-lg font-semibold">Conversation History</h2>
+                  {renderConversationPanel()}
                 </div>
               )}
             </div>
-          </div>
+          )}
         </div>
       </main>
     </div>
