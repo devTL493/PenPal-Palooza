@@ -21,6 +21,7 @@ import ComposeViewOption, { ComposeViewMode } from '@/components/letter/ComposeV
 import ConversationHistory from '@/components/letter/ConversationHistory';
 import ChatMessageInput from '@/components/letter/ChatMessageInput';
 import LetterPreview from '@/components/letter/LetterPreview';
+import LetterContent from '@/components/letter/LetterContent';
 import useTextSelection from '@/hooks/useTextSelection';
 import useLetterSave from '@/hooks/useLetterSave';
 import { InlineStyle, LetterStyle, TextAlignment, ConversationMessage, UserProfile } from '@/types/letter';
@@ -455,6 +456,14 @@ const Compose = () => {
     
     // Set the active quote and ensure conversation is expanded
     setActiveQuoteId(quoteId);
+  };
+
+  // Add the missing updateLetterStyle function
+  const updateLetterStyle = (type: 'paperStyle' | 'borderStyle', value: string) => {
+    setLetterStyle(prev => ({
+      ...prev,
+      [type]: value
+    }));
   };
 
   return (
