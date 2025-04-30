@@ -3,8 +3,9 @@ import React from 'react';
 import ChatMessageInput from '@/components/letter/ChatMessageInput';
 import useTextSelection from '@/hooks/useTextSelection';
 import useLetterSave from '@/hooks/useLetterSave';
-import { TextAlignment, InlineStyle, LetterStyle } from '@/types/letter';
+import { useLetterFormatting } from '@/hooks/useLetterFormatting';
 import LetterEditor from './LetterEditor';
+import { fontOptions, fontSizeOptions, colorOptions, paperStyleOptions, borderStyleOptions } from '@/data/editorOptions';
 
 interface ComposeEditorProps {
   content: string;
@@ -22,33 +23,30 @@ const ComposeEditor: React.FC<ComposeEditorProps> = ({
   handleSend
 }) => {
   const textareaRef = React.useRef<HTMLTextAreaElement>(null);
-  
-  // Style for the whole document
-  const [documentStyle, setDocumentStyle] = React.useState({
-    font: 'font-serif',
-    size: 'text-lg',
-    color: 'text-black',
-    alignment: 'text-left' as TextAlignment,
-  });
-  
-  // Inline styling for specific text selections
-  const [inlineStyles, setInlineStyles] = React.useState<InlineStyle[]>([]);
-  
-  // Letter styling state
-  const [letterStyle, setLetterStyle] = React.useState<LetterStyle>({
-    paperStyle: 'bg-paper',
-    borderStyle: 'border-none',
-  });
-
-  // Popovers state
-  const [linkPopoverOpen, setLinkPopoverOpen] = React.useState(false);
-  const [linkText, setLinkText] = React.useState('');
-  const [linkUrl, setLinkUrl] = React.useState('');
-  const [stylePopoverOpen, setStylePopoverOpen] = React.useState(false);
-  const [paperStylePopoverOpen, setPaperStylePopoverOpen] = React.useState(false);
   const [activeQuoteId, setActiveQuoteId] = React.useState<string | null>(null);
-
+  
   // Use custom hooks
+  const letterFormatting = useLetterFormatting();
+  
+  const { 
+    documentStyle,
+    inlineStyles,
+    letterStyle,
+    linkPopoverOpen,
+    setLinkPopoverOpen,
+    linkText,
+    setLinkText,
+    linkUrl,
+    setLinkUrl,
+    stylePopoverOpen,
+    setStylePopoverOpen,
+    paperStylePopoverOpen,
+    setPaperStylePopoverOpen,
+    updateLetterStyle,
+    applyFormatting,
+    insertLink
+  } = letterFormatting;
+
   const { 
     selectionRange, 
     activeTextFormat, 
@@ -72,85 +70,23 @@ const ComposeEditor: React.FC<ComposeEditorProps> = ({
     letterStyle 
   });
 
-  const applyFormatting = (formatType: string, value: any) => {
-    if (!selectionRange) return;
-    
-    const { start, end } = selectionRange;
-    
-    // Create a new style object for this selection
-    const newStyle: InlineStyle = {
-      start,
-      end,
-      ...activeTextFormat
-    };
-    
-    // Update the specific format that was changed
-    switch (formatType) {
-      case 'bold':
-        newStyle.isBold = !activeTextFormat.isBold;
-        break;
-      case 'italic':
-        newStyle.isItalic = !activeTextFormat.isItalic;
-        break;
-      case 'underline':
-        newStyle.isUnderline = !activeTextFormat.isUnderline;
-        break;
-      case 'font':
-        newStyle.font = value;
-        break;
-      case 'size':
-        newStyle.size = value;
-        break;
-      case 'color':
-        newStyle.color = value;
-        break;
-      case 'alignment':
-        newStyle.alignment = value as TextAlignment;
-        // Alignment affects the whole content
-        setDocumentStyle(prev => ({ ...prev, alignment: value as TextAlignment }));
-        break;
-    }
-    
-    // Add this style to the array
-    setInlineStyles(prev => [...prev, newStyle]);
+  // Function to apply formatting with correct parameters
+  const handleApplyFormatting = (formatType: string, value: any) => {
+    applyFormatting(formatType, value, selectionRange, activeTextFormat);
     
     // Close style popovers after applying
     setStylePopoverOpen(false);
     
     // Update the textarea to maintain focus
-    if (textareaRef.current) {
+    if (textareaRef.current && selectionRange) {
       textareaRef.current.focus();
-      textareaRef.current.setSelectionRange(start, end);
+      textareaRef.current.setSelectionRange(selectionRange.start, selectionRange.end);
     }
   };
 
-  const insertLink = () => {
-    if (!selectionRange || !linkUrl) return;
-
-    // Simple URL validation
-    let finalUrl = linkUrl;
-    if (!linkUrl.startsWith('http://') && !linkUrl.startsWith('https://')) {
-      finalUrl = `https://${linkUrl}`;
-    }
-
-    const { start, end } = selectionRange;
-
-    // Create new style for the link
-    const newLinkStyle: InlineStyle = {
-      start,
-      end,
-      isLink: true,
-      linkUrl: finalUrl,
-      color: 'text-blue-600',
-      isUnderline: true,
-    };
-
-    setInlineStyles(prev => [...prev, newLinkStyle]);
-    
-    // Reset link fields and close popover
-    setLinkText('');
-    setLinkUrl('');
-    setLinkPopoverOpen(false);
+  // Function to handle inserting links
+  const handleInsertLink = () => {
+    insertLink(selectionRange, linkUrl);
     
     // Return focus to textarea
     if (textareaRef.current) {
@@ -158,59 +94,10 @@ const ComposeEditor: React.FC<ComposeEditorProps> = ({
     }
   };
 
-  // Add the updateLetterStyle function
-  const updateLetterStyle = (type: 'paperStyle' | 'borderStyle', value: string) => {
-    setLetterStyle(prev => ({
-      ...prev,
-      [type]: value
-    }));
-  };
-
   // Function to scroll to a quote in the conversation history
   const scrollToQuoteInConversation = (quoteId: string) => {
     setActiveQuoteId(quoteId);
   };
-
-  // Import data for style options
-  const fontOptions = [
-    { label: 'Serif', value: 'font-serif' },
-    { label: 'Sans-serif', value: 'font-sans' },
-    { label: 'Monospace', value: 'font-mono' },
-  ];
-
-  const fontSizeOptions = [
-    { label: 'Small', value: 'text-sm' },
-    { label: 'Normal', value: 'text-base' },
-    { label: 'Large', value: 'text-lg' },
-    { label: 'Extra Large', value: 'text-xl' },
-  ];
-
-  const colorOptions = [
-    { label: 'Black', value: 'text-black', color: '#000000' },
-    { label: 'Gray', value: 'text-gray-600', color: '#4B5563' },
-    { label: 'Red', value: 'text-red-600', color: '#DC2626' },
-    { label: 'Blue', value: 'text-blue-600', color: '#2563EB' },
-    { label: 'Green', value: 'text-green-600', color: '#059669' },
-  ];
-
-  const paperStyleOptions = [
-    { label: 'Plain White', value: 'bg-white', description: 'Clean white background' },
-    { label: 'Cream Paper', value: 'bg-amber-50', description: 'Warm cream colored paper' },
-    { label: 'Light Blue', value: 'bg-blue-50', description: 'Subtle blue tinted paper' },
-    { label: 'Light Green', value: 'bg-green-50', description: 'Soft green background' },
-    { label: 'Light Pink', value: 'bg-pink-50', description: 'Gentle pink colored paper' },
-    { label: 'Vintage Yellow', value: 'bg-yellow-100', description: 'Aged yellow paper look' },
-    { label: 'Soft Gray', value: 'bg-gray-100', description: 'Neutral gray background' },
-    { label: 'Parchment', value: 'bg-amber-100', description: 'Classic parchment appearance' },
-  ];
-
-  const borderStyleOptions = [
-    { label: 'No Border', value: 'border-none', description: 'Clean edge without border' },
-    { label: 'Simple Border', value: 'border-2 border-gray-200', description: 'Basic thin border' },
-    { label: 'Elegant Border', value: 'border-4 border-double border-gray-300', description: 'Double-line decorative border' },
-    { label: 'Bold Border', value: 'border-4 border-gray-400', description: 'Thick prominent border' },
-    { label: 'Decorative Border', value: 'border-4 border-dashed border-gray-300', description: 'Stylish dashed pattern border' },
-  ];
 
   return (
     <>
@@ -233,7 +120,7 @@ const ComposeEditor: React.FC<ComposeEditorProps> = ({
         setLinkUrl={setLinkUrl}
         linkText={linkText}
         setLinkText={setLinkText}
-        insertLink={insertLink}
+        insertLink={handleInsertLink}
         scrollToQuoteInConversation={scrollToQuoteInConversation}
         stylePopoverOpen={stylePopoverOpen}
         setStylePopoverOpen={setStylePopoverOpen}
@@ -241,7 +128,7 @@ const ComposeEditor: React.FC<ComposeEditorProps> = ({
         fontOptions={fontOptions}
         fontSizeOptions={fontSizeOptions}
         colorOptions={colorOptions}
-        applyFormatting={applyFormatting}
+        applyFormatting={handleApplyFormatting}
       />
       
       {/* Message input actions */}
@@ -256,7 +143,7 @@ const ComposeEditor: React.FC<ComposeEditorProps> = ({
         colorOptions={colorOptions}
         stylePopoverOpen={stylePopoverOpen}
         setStylePopoverOpen={setStylePopoverOpen}
-        applyFormatting={applyFormatting}
+        applyFormatting={handleApplyFormatting}
         handleSend={handleSend}
         isSaving={isSaving}
         lastSaved={lastSaved}
