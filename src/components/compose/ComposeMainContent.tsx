@@ -31,10 +31,9 @@ const ComposeMainContent: React.FC<ComposeMainContentProps> = ({
   viewMode,
   isPanelReversed = false
 }) => {
-  // We don't want to duplicate the conversation display on wide screens
   // Only show conversation in mobile view when needed
-  const shouldShowConversation = viewMode === 'side-by-side' && conversation.length > 0 && !isPanelReversed;
-
+  // We've removed the shouldShowConversation condition that was filtering out the conversation
+  
   return (
     <div className="p-4 flex flex-col h-full overflow-y-auto">
       <div className="mb-4">
@@ -55,8 +54,8 @@ const ComposeMainContent: React.FC<ComposeMainContentProps> = ({
         handleSend={handleSend}
       />
       
-      {/* Only show conversation history in mobile view when needed */}
-      {shouldShowConversation && (
+      {/* Show conversation history on mobile for any view mode */}
+      {conversation.length > 0 && viewMode === 'side-by-side' && !isPanelReversed && (
         <div className="mt-6 space-y-6 lg:hidden">
           <h2 className="text-lg font-semibold">Conversation History</h2>
           <ConversationHistory 

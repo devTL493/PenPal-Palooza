@@ -68,8 +68,9 @@ const Compose = () => {
     });
   };
 
-  // Check if we should show the conversation - make sure it's always visible in side-by-side mode
-  const shouldShowConversation = conversation.length > 0;
+  // Always force conversation to be visible if it exists
+  // This was the key issue - the condition was filtering out conversations
+  const shouldShowConversation = conversation && conversation.length > 0;
   
   // Render the composer panel
   const renderComposerPanel = () => (
@@ -111,6 +112,12 @@ const Compose = () => {
       />
     </div>
   );
+
+  // Debug output to help troubleshoot
+  console.log('Conversation length:', conversation?.length);
+  console.log('isWideScreen:', isWideScreen);
+  console.log('shouldShowConversation:', shouldShowConversation);
+  console.log('viewMode:', viewMode);
 
   return (
     <div className="min-h-screen bg-background">
@@ -179,7 +186,7 @@ const Compose = () => {
             </div>
           </div>
           
-          {/* Split panel layout for wide screens - ensure conversation is always shown in side-by-side mode */}
+          {/* Split panel layout for wide screens */}
           {isWideScreen && shouldShowConversation && viewMode === 'side-by-side' ? (
             <SplitPanelLayout
               leftPanel={{

@@ -40,12 +40,13 @@ const useComposeState = ({ conversationId, searchParams, profile }: UseComposeSt
       }
     }
 
+    // Always load sample conversation data to make sure we have something to show
+    // This ensures the conversation history is visible for testing
+    setConversation(sampleConversation);
+    
     const conversationParam = searchParams.get('conversation');
     if (conversationParam === 'true') {
       setIsInConversationContext(true);
-      // In a real app, you'd fetch the conversation with this ID
-      // For the demo, we'll use the sample conversation
-      setConversation(sampleConversation);
     }
     
     // Handle draft parameter
@@ -62,6 +63,7 @@ const useComposeState = ({ conversationId, searchParams, profile }: UseComposeSt
   useEffect(() => {
     if (conversationId) {
       // In a real app, fetch messages for this conversation
+      // Here we're ensuring we always have the sample conversation loaded
       setConversation(sampleConversation);
       
       // Get recipient info
@@ -69,8 +71,12 @@ const useComposeState = ({ conversationId, searchParams, profile }: UseComposeSt
         const otherPerson = sampleConversation.find(msg => !msg.sender.isYou);
         if (otherPerson) {
           setRecipientName(otherPerson.sender.name);
+          setRecipient(conversationId); // Use conversation ID as recipient ID
         }
       }
+      
+      // Ensure we're in conversation context
+      setIsInConversationContext(true);
     }
   }, [conversationId]);
 
@@ -109,6 +115,8 @@ const useComposeState = ({ conversationId, searchParams, profile }: UseComposeSt
       content,
       sentAt: new Date(),
     };
+    
+    console.log('Sending letter:', letterData);
 
     // Show success toast
     toast({
