@@ -194,22 +194,22 @@ const ComposeEditor: React.FC<ComposeEditorProps> = ({
   ];
 
   const paperStyleOptions = [
-    { label: 'Plain White', value: 'bg-white' },
-    { label: 'Cream Paper', value: 'bg-amber-50' },
-    { label: 'Light Blue', value: 'bg-blue-50' },
-    { label: 'Light Green', value: 'bg-green-50' },
-    { label: 'Light Pink', value: 'bg-pink-50' },
-    { label: 'Vintage Yellow', value: 'bg-yellow-100' },
-    { label: 'Soft Gray', value: 'bg-gray-100' },
-    { label: 'Parchment', value: 'bg-amber-100' },
+    { label: 'Plain White', value: 'bg-white', description: 'Clean white background' },
+    { label: 'Cream Paper', value: 'bg-amber-50', description: 'Warm cream colored paper' },
+    { label: 'Light Blue', value: 'bg-blue-50', description: 'Subtle blue tinted paper' },
+    { label: 'Light Green', value: 'bg-green-50', description: 'Soft green background' },
+    { label: 'Light Pink', value: 'bg-pink-50', description: 'Gentle pink colored paper' },
+    { label: 'Vintage Yellow', value: 'bg-yellow-100', description: 'Aged yellow paper look' },
+    { label: 'Soft Gray', value: 'bg-gray-100', description: 'Neutral gray background' },
+    { label: 'Parchment', value: 'bg-amber-100', description: 'Classic parchment appearance' },
   ];
 
   const borderStyleOptions = [
-    { label: 'No Border', value: 'border-none' },
-    { label: 'Simple Border', value: 'border-2 border-gray-200' },
-    { label: 'Elegant Border', value: 'border-4 border-double border-gray-300' },
-    { label: 'Bold Border', value: 'border-4 border-gray-400' },
-    { label: 'Decorative Border', value: 'border-4 border-dashed border-gray-300' },
+    { label: 'No Border', value: 'border-none', description: 'Clean edge without border' },
+    { label: 'Simple Border', value: 'border-2 border-gray-200', description: 'Basic thin border' },
+    { label: 'Elegant Border', value: 'border-4 border-double border-gray-300', description: 'Double-line decorative border' },
+    { label: 'Bold Border', value: 'border-4 border-gray-400', description: 'Thick prominent border' },
+    { label: 'Decorative Border', value: 'border-4 border-dashed border-gray-300', description: 'Stylish dashed pattern border' },
   ];
 
   return (
