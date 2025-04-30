@@ -68,8 +68,8 @@ const Compose = () => {
     });
   };
 
-  // Check if we should show the conversation
-  const shouldShowConversation = viewMode !== 'new-tab' && conversation.length > 0;
+  // Check if we should show the conversation - make sure it's always visible in side-by-side mode
+  const shouldShowConversation = conversation.length > 0;
   
   // Render the composer panel
   const renderComposerPanel = () => (
@@ -91,7 +91,7 @@ const Compose = () => {
   const renderConversationPanel = () => (
     <div className="p-4 h-full overflow-y-auto">
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-lg font-semibold">Conversation with {recipientName}</h2>
+        <h2 className="text-lg font-semibold">Conversation with {recipientName || "Pen Pal"}</h2>
         <Button 
           variant="outline"
           size="sm"
@@ -179,7 +179,7 @@ const Compose = () => {
             </div>
           </div>
           
-          {/* Split panel layout for wide screens */}
+          {/* Split panel layout for wide screens - ensure conversation is always shown in side-by-side mode */}
           {isWideScreen && shouldShowConversation && viewMode === 'side-by-side' ? (
             <SplitPanelLayout
               leftPanel={{
@@ -199,7 +199,7 @@ const Compose = () => {
             <div className="space-y-6">
               {/* Original layout for mobile view */}
               <div className={`${viewMode === 'overlay' && shouldShowConversation ? 'relative' : ''}`}>
-                {/* Conversation History (Overlay or side-by-side) */}
+                {/* Conversation History (Overlay mode) */}
                 {shouldShowConversation && (viewMode === 'overlay') && (
                   <div className="absolute inset-0 z-0 opacity-15 pointer-events-none">
                     <ConversationHistory 
@@ -232,7 +232,13 @@ const Compose = () => {
                       <span className="hidden sm:inline">Swap View</span>
                     </Button>
                   </div>
-                  {renderConversationPanel()}
+                  <div className="border rounded-md p-4">
+                    <ConversationHistory 
+                      conversation={conversation}
+                      showComposeButton={false}
+                      expandable={true}
+                    />
+                  </div>
                 </div>
               )}
             </div>

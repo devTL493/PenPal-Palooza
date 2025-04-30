@@ -31,7 +31,9 @@ const ComposeMainContent: React.FC<ComposeMainContentProps> = ({
   viewMode,
   isPanelReversed = false
 }) => {
-  const shouldShowConversation = viewMode === 'side-by-side' && conversation.length > 0;
+  // We don't want to duplicate the conversation display on wide screens
+  // Only show conversation in mobile view when needed
+  const shouldShowConversation = viewMode === 'side-by-side' && conversation.length > 0 && !isPanelReversed;
 
   return (
     <div className="p-4 flex flex-col h-full overflow-y-auto">
@@ -53,7 +55,7 @@ const ComposeMainContent: React.FC<ComposeMainContentProps> = ({
         handleSend={handleSend}
       />
       
-      {/* Show conversation history in mobile view if needed */}
+      {/* Only show conversation history in mobile view when needed */}
       {shouldShowConversation && (
         <div className="mt-6 space-y-6 lg:hidden">
           <h2 className="text-lg font-semibold">Conversation History</h2>

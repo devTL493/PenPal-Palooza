@@ -121,25 +121,30 @@ const LetterEditor: React.FC<LetterEditorProps> = ({
       {content !== undefined && (
         <Card className={`${letterStyle.paperStyle} ${letterStyle.borderStyle} mb-4 min-h-[60vh] relative`}>
           <CardContent className="p-4 md:p-6 relative">
-            {/* Live letter content preview layer */}
-            <div className="pointer-events-none absolute inset-0 p-4 md:p-6 z-10">
+            {/* The preview and textarea are stacked with the textarea being transparent */}
+            {/* LetterPreview visible layer */}
+            <div className="absolute inset-0 p-4 md:p-6 z-10 pointer-events-none">
               <LetterPreview
                 content={content}
                 documentStyle={documentStyle}
                 inlineStyles={inlineStyles}
                 scrollToQuoteInConversation={scrollToQuoteInConversation}
                 timestamp={new Date().toISOString()}
+                isPreview={false} /* Don't show duplicate text */
               />
             </div>
             
-            {/* Textarea input layer that's transparent */}
+            {/* Textarea input layer that's invisible but functional */}
             <Textarea
               ref={textareaRef}
               placeholder="Write your letter here..."
               value={content}
               onChange={(e) => setContent(e.target.value)}
-              className="min-h-[60vh] resize-none font-serif bg-transparent text-transparent caret-black relative z-20"
-              style={{ caretColor: documentStyle.color === 'text-white' ? '#FFFFFF' : '#000000' }}
+              className="min-h-[60vh] resize-none font-serif relative z-20 opacity-100 bg-transparent"
+              style={{ 
+                caretColor: documentStyle.color === 'text-white' ? '#FFFFFF' : '#000000',
+                color: 'transparent' 
+              }}
             />
           </CardContent>
         </Card>
