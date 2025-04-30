@@ -1,9 +1,9 @@
-
 import React from 'react';
 import ChatMessageInput from '@/components/letter/ChatMessageInput';
 import useTextSelection from '@/hooks/useTextSelection';
 import useLetterSave from '@/hooks/useLetterSave';
 import { TextAlignment, InlineStyle, LetterStyle } from '@/types/letter';
+import LetterEditor from './LetterEditor';
 
 interface ComposeEditorProps {
   content: string;

@@ -4,7 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import PaperStylePopover from '@/components/letter/PaperStylePopover';
 import LinkPopover from '@/components/letter/LinkPopover';
 import LetterPreview from '@/components/letter/LetterPreview';
-import { LetterStyle, InlineStyle } from '@/types/letter';
+import { LetterStyle, InlineStyle, TextAlignment } from '@/types/letter';
 
 interface LetterEditorProps {
   content: string;
@@ -12,7 +12,7 @@ interface LetterEditorProps {
     font: string;
     size: string;
     color: string;
-    alignment: string;
+    alignment: TextAlignment;
   };
   inlineStyles: InlineStyle[];
   letterStyle: LetterStyle;
