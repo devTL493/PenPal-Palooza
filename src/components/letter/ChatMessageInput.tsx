@@ -1,92 +1,64 @@
 
-import React, { useState, useRef, KeyboardEvent } from 'react';
+import React, { RefObject } from 'react';
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { Send, Image, PaperclipIcon } from 'lucide-react';
-import TextFormattingToolbar from './TextFormattingToolbar';
-import { InlineStyle, TextAlignment } from '@/types/letter';
+import { Send, Save, Clock } from 'lucide-react';
+import { FontOption, FontSizeOption, ColorOption } from '@/types/letter';
 
 interface ChatMessageInputProps {
   content: string;
   setContent: (content: string) => void;
-  textareaRef: React.RefObject<HTMLTextAreaElement>;
+  textareaRef: RefObject<HTMLTextAreaElement>;
   selectionRange: { start: number; end: number } | null;
-  activeTextFormat: {
-    isBold: boolean;
-    isItalic: boolean;
-    isUnderline: boolean;
-    font: string;
-    size: string;
-    color: string;
-    alignment: TextAlignment;
-  };
-  fontOptions: any[];
-  fontSizeOptions: any[];
-  colorOptions: any[];
+  activeTextFormat: any; // Using 'any' as this is just passed through
+  fontOptions: FontOption[];
+  fontSizeOptions: FontSizeOption[];
+  colorOptions: ColorOption[];
   stylePopoverOpen: boolean;
   setStylePopoverOpen: (open: boolean) => void;
   applyFormatting: (formatType: string, value: any) => void;
   handleSend: () => void;
+  isSaving?: boolean;
+  lastSaved?: Date | null;
+  handleAutoSave?: () => void;
+  formatLastSaved?: () => string;
 }
 
 const ChatMessageInput: React.FC<ChatMessageInputProps> = ({
   content,
   setContent,
   textareaRef,
-  selectionRange,
-  activeTextFormat,
-  fontOptions,
-  fontSizeOptions,
-  colorOptions,
-  stylePopoverOpen,
-  setStylePopoverOpen,
-  applyFormatting,
-  handleSend
+  handleSend,
+  isSaving,
+  lastSaved,
+  handleAutoSave,
+  formatLastSaved
 }) => {
-  // Send message on Ctrl+Enter
-  const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Enter' && e.ctrlKey) {
-      e.preventDefault();
-      handleSend();
-    }
-  };
-
   return (
-    <div className="relative bg-background rounded-lg border shadow-sm">
-      <div className="border-b p-2 flex items-center gap-2">
-        <TextFormattingToolbar
-          selectionRange={selectionRange}
-          activeTextFormat={activeTextFormat}
-          fontOptions={fontOptions}
-          fontSizeOptions={fontSizeOptions}
-          colorOptions={colorOptions}
-          stylePopoverOpen={stylePopoverOpen}
-          setStylePopoverOpen={setStylePopoverOpen}
-          applyFormatting={applyFormatting}
-        />
+    <div className="border-t border-border pt-4 flex flex-wrap justify-between gap-2 mt-4">
+      <div className="flex items-center text-sm text-muted-foreground">
+        {isSaving ? (
+          <span className="flex items-center">
+            <Clock className="animate-pulse h-4 w-4 mr-2" />
+            Saving...
+          </span>
+        ) : lastSaved && formatLastSaved ? (
+          <span className="flex items-center">
+            <Clock className="h-4 w-4 mr-2" />
+            {formatLastSaved()}
+          </span>
+        ) : null}
       </div>
       
-      <Textarea
-        ref={textareaRef}
-        placeholder="Write your letter here... (Ctrl+Enter to send)"
-        value={content}
-        onChange={(e) => setContent(e.target.value)}
-        onKeyDown={handleKeyDown}
-        className={`min-h-[150px] resize-none border-0 focus-visible:ring-0 ${activeTextFormat.font}`}
-      />
-      
-      <div className="p-2 flex justify-between items-center border-t">
-        <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon" title="Attach file">
-            <PaperclipIcon className="h-4 w-4" />
+      <div className="flex gap-2">
+        {handleAutoSave && (
+          <Button variant="outline" onClick={handleAutoSave}>
+            <Save className="h-4 w-4 mr-2" />
+            Save Draft
           </Button>
-          <Button variant="ghost" size="icon" title="Add image">
-            <Image className="h-4 w-4" />
-          </Button>
-        </div>
-        
-        <Button onClick={handleSend} className="gap-2">
-          <Send className="h-4 w-4" /> Send
+        )}
+        <Button onClick={handleSend}>
+          <Send className="h-4 w-4 mr-2" />
+          Send Letter
         </Button>
       </div>
     </div>

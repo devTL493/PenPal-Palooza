@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate, useParams } from 'react-router-dom';
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, MonitorIcon, SmartphoneIcon } from 'lucide-react';
+import { ArrowLeft, MonitorIcon, SmartphoneIcon, ArrowLeftRight } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import Navigation from '@/components/Navigation';
 import ComposeViewOption, { ComposeViewMode } from '@/components/letter/ComposeViewOption';
@@ -60,6 +60,12 @@ const Compose = () => {
   // Function to switch panel positions
   const togglePanelPosition = () => {
     setIsPanelReversed(prev => !prev);
+    
+    // Show toast notification
+    toast({
+      title: `Panel positions ${isPanelReversed ? "reset" : "swapped"}`,
+      description: `Conversation is now on the ${isPanelReversed ? "right" : "left"}`,
+    });
   };
 
   // Check if we should show the conversation
@@ -77,13 +83,25 @@ const Compose = () => {
       isInConversationContext={isInConversationContext}
       handleSend={handleSend}
       viewMode={viewMode}
+      isPanelReversed={isPanelReversed}
     />
   );
 
   // Render the conversation panel
   const renderConversationPanel = () => (
     <div className="p-4 h-full overflow-y-auto">
-      <h2 className="text-lg font-semibold mb-4">Conversation with {recipientName}</h2>
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-lg font-semibold">Conversation with {recipientName}</h2>
+        <Button 
+          variant="outline"
+          size="sm"
+          onClick={togglePanelPosition}
+          title="Switch panel positions"
+          className="lg:hidden"
+        >
+          <ArrowLeftRight className="h-4 w-4" />
+        </Button>
+      </div>
       
       <ConversationHistory 
         conversation={conversation}
@@ -115,11 +133,26 @@ const Compose = () => {
             
             <div className="flex items-center gap-2">
               {conversation.length > 0 && (
-                <ComposeViewOption
-                  currentMode={viewMode}
-                  onModeChange={setViewMode}
-                  recipientId={recipient}
-                />
+                <>
+                  <ComposeViewOption
+                    currentMode={viewMode}
+                    onModeChange={setViewMode}
+                    recipientId={recipient}
+                  />
+                  
+                  {/* Swap panels button (desktop only) */}
+                  {isWideScreen && viewMode === 'side-by-side' && (
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={togglePanelPosition}
+                      title="Switch panel positions"
+                    >
+                      <ArrowLeftRight className="h-4 w-4 mr-2" />
+                      <span className="hidden sm:inline">Swap Panels</span>
+                    </Button>
+                  )}
+                </>
               )}
               
               {/* Toggle for the responsive view */}
@@ -151,15 +184,16 @@ const Compose = () => {
             <SplitPanelLayout
               leftPanel={{
                 content: isPanelReversed ? renderConversationPanel() : renderComposerPanel(),
-                config: { defaultSize: 40, minSize: 30, maxSize: 70 }
+                config: { defaultSize: isPanelReversed ? 30 : 70, minSize: 25, maxSize: 75 }
               }}
               rightPanel={{
                 content: isPanelReversed ? renderComposerPanel() : renderConversationPanel(),
-                config: { defaultSize: 60, minSize: 30, maxSize: 70 }
+                config: { defaultSize: isPanelReversed ? 70 : 30, minSize: 25, maxSize: 75 }
               }}
               isReversed={isPanelReversed}
               onToggleLayout={togglePanelPosition}
-              className="h-[calc(100vh-120px)]"
+              className="h-[calc(100vh-160px)]"
+              toggleButtonPosition="center"
             />
           ) : (
             <div className="space-y-6">
@@ -186,7 +220,18 @@ const Compose = () => {
               {/* Display conversation messages in side-by-side mode (mobile) */}
               {shouldShowConversation && viewMode === 'side-by-side' && !isWideScreen && (
                 <div className="mt-6 space-y-6">
-                  <h2 className="text-lg font-semibold">Conversation History</h2>
+                  <div className="flex justify-between items-center">
+                    <h2 className="text-lg font-semibold">Conversation History</h2>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={togglePanelPosition}
+                      title="Switch to conversation view first"
+                    >
+                      <ArrowLeftRight className="h-4 w-4 mr-2" />
+                      <span className="hidden sm:inline">Swap View</span>
+                    </Button>
+                  </div>
                   {renderConversationPanel()}
                 </div>
               )}

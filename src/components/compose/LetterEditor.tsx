@@ -5,9 +5,14 @@ import PaperStylePopover from '@/components/letter/PaperStylePopover';
 import LinkPopover from '@/components/letter/LinkPopover';
 import LetterPreview from '@/components/letter/LetterPreview';
 import { LetterStyle, InlineStyle, TextAlignment } from '@/types/letter';
+import { Textarea } from "@/components/ui/textarea";
+import TextFormattingToolbar from '@/components/letter/TextFormattingToolbar';
+import { FontOption, FontSizeOption, ColorOption, PaperStyleOption, BorderStyleOption } from '@/types/letter';
 
 interface LetterEditorProps {
   content: string;
+  setContent: (content: string) => void;
+  textareaRef: React.RefObject<HTMLTextAreaElement>;
   documentStyle: {
     font: string;
     size: string;
@@ -18,8 +23,8 @@ interface LetterEditorProps {
   letterStyle: LetterStyle;
   paperStylePopoverOpen: boolean;
   setPaperStylePopoverOpen: (open: boolean) => void;
-  paperStyleOptions: any[];
-  borderStyleOptions: any[];
+  paperStyleOptions: PaperStyleOption[];
+  borderStyleOptions: BorderStyleOption[];
   updateLetterStyle: (type: 'paperStyle' | 'borderStyle', value: string) => void;
   linkPopoverOpen: boolean;
   setLinkPopoverOpen: (open: boolean) => void;
@@ -30,10 +35,27 @@ interface LetterEditorProps {
   setLinkText: (text: string) => void;
   insertLink: () => void;
   scrollToQuoteInConversation: (quoteId: string) => void;
+  stylePopoverOpen: boolean;
+  setStylePopoverOpen: (open: boolean) => void;
+  activeTextFormat: {
+    isBold: boolean;
+    isItalic: boolean;
+    isUnderline: boolean;
+    font: string;
+    size: string;
+    color: string;
+    alignment: TextAlignment;
+  };
+  fontOptions: FontOption[];
+  fontSizeOptions: FontSizeOption[];
+  colorOptions: ColorOption[];
+  applyFormatting: (formatType: string, value: any) => void;
 }
 
 const LetterEditor: React.FC<LetterEditorProps> = ({
   content,
+  setContent,
+  textareaRef,
   documentStyle,
   inlineStyles,
   letterStyle,
@@ -50,12 +72,30 @@ const LetterEditor: React.FC<LetterEditorProps> = ({
   linkText,
   setLinkText,
   insertLink,
-  scrollToQuoteInConversation
+  scrollToQuoteInConversation,
+  stylePopoverOpen,
+  setStylePopoverOpen,
+  activeTextFormat,
+  fontOptions,
+  fontSizeOptions,
+  colorOptions,
+  applyFormatting
 }) => {
   return (
     <>
-      {/* Styling options */}
-      <div className="flex items-center gap-2 mb-4">
+      {/* Text formatting and styling options */}
+      <div className="flex flex-wrap items-center gap-2 mb-4">
+        <TextFormattingToolbar
+          selectionRange={selectionRange}
+          activeTextFormat={activeTextFormat}
+          fontOptions={fontOptions}
+          fontSizeOptions={fontSizeOptions}
+          colorOptions={colorOptions}
+          stylePopoverOpen={stylePopoverOpen}
+          setStylePopoverOpen={setStylePopoverOpen}
+          applyFormatting={applyFormatting}
+        />
+        
         <PaperStylePopover
           paperStylePopoverOpen={paperStylePopoverOpen}
           setPaperStylePopoverOpen={setPaperStylePopoverOpen}
@@ -77,16 +117,29 @@ const LetterEditor: React.FC<LetterEditorProps> = ({
         />
       </div>
       
-      {/* Letter preview */}
-      {content && (
-        <Card className={`${letterStyle.paperStyle} ${letterStyle.borderStyle} mb-4`}>
-          <CardContent className="p-4 md:p-6">
-            <LetterPreview
-              content={content}
-              documentStyle={documentStyle}
-              inlineStyles={inlineStyles}
-              scrollToQuoteInConversation={scrollToQuoteInConversation}
-              timestamp={new Date().toISOString()}
+      {/* Integrated letter editor with live preview */}
+      {content !== undefined && (
+        <Card className={`${letterStyle.paperStyle} ${letterStyle.borderStyle} mb-4 min-h-[60vh] relative`}>
+          <CardContent className="p-4 md:p-6 relative">
+            {/* Live letter content preview layer */}
+            <div className="pointer-events-none absolute inset-0 p-4 md:p-6 z-10">
+              <LetterPreview
+                content={content}
+                documentStyle={documentStyle}
+                inlineStyles={inlineStyles}
+                scrollToQuoteInConversation={scrollToQuoteInConversation}
+                timestamp={new Date().toISOString()}
+              />
+            </div>
+            
+            {/* Textarea input layer that's transparent */}
+            <Textarea
+              ref={textareaRef}
+              placeholder="Write your letter here..."
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              className="min-h-[60vh] resize-none font-serif bg-transparent text-transparent caret-black relative z-20"
+              style={{ caretColor: documentStyle.color === 'text-white' ? '#FFFFFF' : '#000000' }}
             />
           </CardContent>
         </Card>

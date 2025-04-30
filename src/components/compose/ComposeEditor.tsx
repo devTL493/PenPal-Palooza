@@ -1,3 +1,4 @@
+
 import React from 'react';
 import ChatMessageInput from '@/components/letter/ChatMessageInput';
 import useTextSelection from '@/hooks/useTextSelection';
@@ -198,6 +199,9 @@ const ComposeEditor: React.FC<ComposeEditorProps> = ({
     { label: 'Light Blue', value: 'bg-blue-50' },
     { label: 'Light Green', value: 'bg-green-50' },
     { label: 'Light Pink', value: 'bg-pink-50' },
+    { label: 'Vintage Yellow', value: 'bg-yellow-100' },
+    { label: 'Soft Gray', value: 'bg-gray-100' },
+    { label: 'Parchment', value: 'bg-amber-100' },
   ];
 
   const borderStyleOptions = [
@@ -205,12 +209,15 @@ const ComposeEditor: React.FC<ComposeEditorProps> = ({
     { label: 'Simple Border', value: 'border-2 border-gray-200' },
     { label: 'Elegant Border', value: 'border-4 border-double border-gray-300' },
     { label: 'Bold Border', value: 'border-4 border-gray-400' },
+    { label: 'Decorative Border', value: 'border-4 border-dashed border-gray-300' },
   ];
 
   return (
     <>
       <LetterEditor 
         content={content}
+        setContent={setContent}
+        textareaRef={textareaRef}
         documentStyle={documentStyle}
         inlineStyles={inlineStyles}
         letterStyle={letterStyle}
@@ -228,9 +235,16 @@ const ComposeEditor: React.FC<ComposeEditorProps> = ({
         setLinkText={setLinkText}
         insertLink={insertLink}
         scrollToQuoteInConversation={scrollToQuoteInConversation}
+        stylePopoverOpen={stylePopoverOpen}
+        setStylePopoverOpen={setStylePopoverOpen}
+        activeTextFormat={activeTextFormat}
+        fontOptions={fontOptions}
+        fontSizeOptions={fontSizeOptions}
+        colorOptions={colorOptions}
+        applyFormatting={applyFormatting}
       />
       
-      {/* Message input */}
+      {/* Message input actions */}
       <ChatMessageInput 
         content={content}
         setContent={setContent}
@@ -244,6 +258,10 @@ const ComposeEditor: React.FC<ComposeEditorProps> = ({
         setStylePopoverOpen={setStylePopoverOpen}
         applyFormatting={applyFormatting}
         handleSend={handleSend}
+        isSaving={isSaving}
+        lastSaved={lastSaved}
+        handleAutoSave={handleAutoSave}
+        formatLastSaved={formatLastSaved}
       />
     </>
   );

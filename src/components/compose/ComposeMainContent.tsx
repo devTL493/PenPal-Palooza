@@ -4,6 +4,7 @@ import LetterHeader from './LetterHeader';
 import ComposeEditor from './ComposeEditor';
 import { ComposeViewMode } from '@/components/letter/ComposeViewOption';
 import { ConversationMessage } from '@/types/letter';
+import ConversationHistory from '@/components/letter/ConversationHistory';
 
 interface ComposeMainContentProps {
   recipient: string;
@@ -15,6 +16,7 @@ interface ComposeMainContentProps {
   isInConversationContext: boolean;
   handleSend: () => void;
   viewMode: ComposeViewMode;
+  isPanelReversed?: boolean;
 }
 
 const ComposeMainContent: React.FC<ComposeMainContentProps> = ({
@@ -26,8 +28,11 @@ const ComposeMainContent: React.FC<ComposeMainContentProps> = ({
   conversation,
   isInConversationContext,
   handleSend,
-  viewMode
+  viewMode,
+  isPanelReversed = false
 }) => {
+  const shouldShowConversation = viewMode === 'side-by-side' && conversation.length > 0;
+
   return (
     <div className="p-4 flex flex-col h-full overflow-y-auto">
       <div className="mb-4">
@@ -47,6 +52,18 @@ const ComposeMainContent: React.FC<ComposeMainContentProps> = ({
         recipient={recipient}
         handleSend={handleSend}
       />
+      
+      {/* Show conversation history in mobile view if needed */}
+      {shouldShowConversation && (
+        <div className="mt-6 space-y-6 lg:hidden">
+          <h2 className="text-lg font-semibold">Conversation History</h2>
+          <ConversationHistory 
+            conversation={conversation}
+            showComposeButton={false}
+            expandable={true}
+          />
+        </div>
+      )}
     </div>
   );
 };
