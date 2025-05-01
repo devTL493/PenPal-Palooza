@@ -125,6 +125,7 @@ const LetterDetailView: React.FC<LetterDetailViewProps> = ({
       {shouldShowConversation && (!isWideScreen || viewMode !== 'side-by-side') && (
         <div className="lg:col-span-2">
           <div className="flex justify-between items-center mb-4">
+            <h2 className="text-lg font-semibold">Conversation History</h2>
             {!isWideScreen && (
               <Button 
                 variant="outline"
