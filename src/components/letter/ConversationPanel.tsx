@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Button } from "@/components/ui/button";
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeftRight } from 'lucide-react';
 import ConversationHistory from '@/components/letter/ConversationHistory';
 import { ComposeViewMode } from '@/components/letter/ComposeViewOption';
 
@@ -46,7 +46,7 @@ const ConversationPanel: React.FC<ConversationPanelProps> = ({
             onClick={onTogglePanelPosition}
             title="Switch panel positions"
           >
-            <ArrowLeft className="h-4 w-4 mr-2" />
+            <ArrowLeftRight className="h-4 w-4 mr-2" />
             Swap Panels
           </Button>
         )}

@@ -5,6 +5,8 @@ import LetterPanel from '@/components/letter/LetterPanel';
 import ConversationPanel from '@/components/letter/ConversationPanel';
 import { ComposeViewMode } from '@/components/letter/ComposeViewOption';
 import ConversationHistory from '@/components/letter/ConversationHistory';
+import { ArrowLeftRight } from 'lucide-react';
+import { Button } from "@/components/ui/button";
 
 interface LetterDetailViewProps {
   letter: {
@@ -122,6 +124,19 @@ const LetterDetailView: React.FC<LetterDetailViewProps> = ({
       {/* Conversation panel for mobile */}
       {shouldShowConversation && (!isWideScreen || viewMode !== 'side-by-side') && (
         <div className="lg:col-span-2">
+          <div className="flex justify-between items-center mb-4">
+            {!isWideScreen && (
+              <Button 
+                variant="outline"
+                size="sm"
+                onClick={togglePanelPosition}
+                title="Switch panel positions"
+              >
+                <ArrowLeftRight className="h-4 w-4 mr-2" />
+                Swap Panels
+              </Button>
+            )}
+          </div>
           {renderConversationPanel()}
         </div>
       )}
