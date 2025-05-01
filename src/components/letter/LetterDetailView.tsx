@@ -74,7 +74,7 @@ const LetterDetailView: React.FC<LetterDetailViewProps> = ({
       onDeleteConversation={onDeleteConversation}
       onScrollToQuote={onScrollToQuote}
       viewMode={viewMode}
-      onTogglePanelPosition={togglePanelPosition}
+      onTogglePanelPosition={togglePanelPosition} // Direct function reference
       isWideScreen={isWideScreen}
     />
   );
@@ -92,7 +92,7 @@ const LetterDetailView: React.FC<LetterDetailViewProps> = ({
           config: { defaultSize: isPanelReversed ? 70 : 30, minSize: 25, maxSize: 75 }
         }}
         isReversed={isPanelReversed}
-        onToggleLayout={togglePanelPosition}
+        onToggleLayout={togglePanelPosition} // Direct function reference
         className="h-[calc(100vh-160px)]"
         toggleButtonPosition="center"
       />
@@ -130,7 +130,7 @@ const LetterDetailView: React.FC<LetterDetailViewProps> = ({
               <Button 
                 variant="outline"
                 size="sm"
-                onClick={togglePanelPosition}
+                onClick={togglePanelPosition} // Direct function reference
                 title="Switch panel positions"
               >
                 <ArrowLeftRight className="h-4 w-4 mr-2" />

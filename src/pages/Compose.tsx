@@ -42,7 +42,6 @@ const Compose = () => {
     setViewMode,
     isPanelReversed,
     isWideScreen,
-    setIsWideScreen,
     togglePanelPosition
   } = useComposeView();
 
@@ -73,7 +72,7 @@ const Compose = () => {
         <Button 
           variant="outline"
           size="sm"
-          onClick={togglePanelPosition}
+          onClick={togglePanelPosition} // Direct function reference
           title="Switch panel positions"
           className="lg:hidden"
         >
@@ -95,6 +94,7 @@ const Compose = () => {
   console.log('isWideScreen:', isWideScreen);
   console.log('shouldShowConversation:', shouldShowConversation);
   console.log('viewMode:', viewMode);
+  console.log('isPanelReversed:', isPanelReversed); // Add this for debugging
 
   return (
     <div className="min-h-screen bg-background">
@@ -127,7 +127,7 @@ const Compose = () => {
                 config: { defaultSize: isPanelReversed ? 70 : 30, minSize: 25, maxSize: 75 }
               }}
               isReversed={isPanelReversed}
-              onToggleLayout={togglePanelPosition}
+              onToggleLayout={togglePanelPosition} // Direct function reference
               className="h-[calc(100vh-160px)]"
               toggleButtonPosition="center"
             />
@@ -137,7 +137,7 @@ const Compose = () => {
               renderComposerPanel={renderComposerPanel}
               conversation={conversation}
               shouldShowConversation={shouldShowConversation}
-              togglePanelPosition={togglePanelPosition}
+              togglePanelPosition={togglePanelPosition} // Direct function reference
             />
           )}
         </div>

@@ -43,7 +43,7 @@ const ConversationPanel: React.FC<ConversationPanelProps> = ({
           <Button 
             variant="outline"
             size="sm"
-            onClick={() => onTogglePanelPosition()} // Ensure we're calling the function
+            onClick={onTogglePanelPosition} // Direct function reference
             title="Switch panel positions"
           >
             <ArrowLeftRight className="h-4 w-4 mr-2" />

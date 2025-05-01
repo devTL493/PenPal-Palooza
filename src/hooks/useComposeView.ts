@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useToast } from "@/hooks/use-toast";
 import { ComposeViewMode } from '@/components/letter/ComposeViewOption';
 
@@ -31,9 +31,8 @@ export const useComposeView = (): ComposeViewState => {
     };
   }, []);
 
-  // Function to switch panel positions
-  const togglePanelPosition = () => {
-    // Force a state update by using a callback to ensure the new state is based on the current state
+  // Function to switch panel positions - using useCallback to maintain reference stability
+  const togglePanelPosition = useCallback(() => {
     setIsPanelReversed(prevState => {
       const newValue = !prevState;
       
@@ -45,7 +44,7 @@ export const useComposeView = (): ComposeViewState => {
       
       return newValue;
     });
-  };
+  }, [toast]);
 
   return {
     viewMode,

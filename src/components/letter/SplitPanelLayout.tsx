@@ -56,6 +56,14 @@ const SplitPanelLayout: React.FC<SplitPanelLayoutProps> = ({
         return 'top-1/2 -translate-y-1/2';
     }
   };
+
+  // Handler for the toggle button click with console log for debugging
+  const handleToggleClick = () => {
+    console.log('Toggle button clicked, isReversed before:', isReversed);
+    if (onToggleLayout) {
+      onToggleLayout();
+    }
+  };
   
   return (
     <div className={`relative ${className}`}>
@@ -87,8 +95,8 @@ const SplitPanelLayout: React.FC<SplitPanelLayoutProps> = ({
           variant="outline" 
           size="icon"
           className={`absolute left-1/2 -translate-x-1/2 z-10 bg-background shadow ${getToggleButtonPosition()}`}
-          onClick={onToggleLayout}
-          title="Switch panel positions"
+          onClick={handleToggleClick} // Use the new handler
+          title={`Switch panel positions (currently ${isReversed ? "reversed" : "normal"})`}
         >
           {isReversed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
         </Button>
