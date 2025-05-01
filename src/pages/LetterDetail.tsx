@@ -22,6 +22,7 @@ import ComposeViewOption from '@/components/letter/ComposeViewOption';
 const inboxLetters = [{
   id: '1',
   sender: {
+    id: '101', // Added ID to fix the TypeScript error
     name: 'Emily Chen',
     avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=256&auto=format&fit=crop'
   },
@@ -259,7 +260,7 @@ const LetterDetail = () => {
                 <ComposeViewOption 
                   currentMode={viewMode}
                   onModeChange={setViewMode}
-                  recipientId={letter.sender.id}
+                  recipientId={letter.sender.id || ''}  // Fixed here - providing a default empty string
                 />
               )}
             </div>
