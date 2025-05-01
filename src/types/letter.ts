@@ -12,6 +12,9 @@ export interface ConversationMessage {
 
 export type TextAlignment = 'text-left' | 'text-center' | 'text-right';
 
+// New type for paper sizes
+export type LetterSize = 'a4' | 'a5' | 'a6' | 'b4' | 'b5' | 'b6' | 'custom';
+
 export interface InlineStyle {
   start: number;
   end: number;
@@ -29,6 +32,7 @@ export interface InlineStyle {
 export interface LetterStyle {
   paperStyle: string;
   borderStyle: string;
+  paperSize?: LetterSize; // Added paperSize property
 }
 
 export interface FontOption {

@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Palette } from 'lucide-react';
 import { PaperStyleOption, BorderStyleOption } from '@/types/letter';
+import PaperSizeSelector from './PaperSizeSelector';
+import { PaperSizeOption } from '@/hooks/usePaperStyle';
 
 interface PaperStylePopoverProps {
   paperStylePopoverOpen: boolean;
@@ -15,6 +17,17 @@ interface PaperStylePopoverProps {
     borderStyle: string;
   };
   updateLetterStyle: (type: 'paperStyle' | 'borderStyle', value: string) => void;
+  // Optional paper size props
+  paperSizeProps?: {
+    paperSize: string;
+    setPaperSize: (size: string) => void;
+    paperSizeOptions: PaperSizeOption[];
+    customWidth: string;
+    setCustomWidth: (width: string) => void;
+    customHeight: string;
+    setCustomHeight: (height: string) => void;
+    isCustomSize: boolean;
+  };
 }
 
 const PaperStylePopover: React.FC<PaperStylePopoverProps> = ({
@@ -23,7 +36,8 @@ const PaperStylePopover: React.FC<PaperStylePopoverProps> = ({
   paperStyleOptions,
   borderStyleOptions,
   letterStyle,
-  updateLetterStyle
+  updateLetterStyle,
+  paperSizeProps
 }) => {
   return (
     <Popover open={paperStylePopoverOpen} onOpenChange={setPaperStylePopoverOpen}>
@@ -76,6 +90,22 @@ const PaperStylePopover: React.FC<PaperStylePopoverProps> = ({
               ))}
             </div>
           </div>
+          
+          {/* Paper size section - only show if props are provided */}
+          {paperSizeProps && (
+            <div className="border-t pt-4 mt-4">
+              <PaperSizeSelector
+                paperSize={paperSizeProps.paperSize as any}
+                setPaperSize={paperSizeProps.setPaperSize as any}
+                paperSizeOptions={paperSizeProps.paperSizeOptions}
+                customWidth={paperSizeProps.customWidth}
+                setCustomWidth={paperSizeProps.setCustomWidth}
+                customHeight={paperSizeProps.customHeight}
+                setCustomHeight={paperSizeProps.setCustomHeight}
+                isCustomSize={paperSizeProps.isCustomSize}
+              />
+            </div>
+          )}
         </div>
       </PopoverContent>
     </Popover>

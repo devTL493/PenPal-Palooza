@@ -4,10 +4,11 @@ import { Card, CardContent } from "@/components/ui/card";
 import PaperStylePopover from '@/components/letter/PaperStylePopover';
 import LinkPopover from '@/components/letter/LinkPopover';
 import LetterPreview from '@/components/letter/LetterPreview';
-import { LetterStyle, InlineStyle, TextAlignment } from '@/types/letter';
+import { LetterStyle, InlineStyle, TextAlignment, LetterSize } from '@/types/letter';
 import { Textarea } from "@/components/ui/textarea";
 import TextFormattingToolbar from '@/components/letter/TextFormattingToolbar';
 import { FontOption, FontSizeOption, ColorOption, PaperStyleOption, BorderStyleOption } from '@/types/letter';
+import { PaperSizeOption } from '@/hooks/usePaperStyle';
 
 interface LetterEditorProps {
   content: string;
@@ -50,6 +51,18 @@ interface LetterEditorProps {
   fontSizeOptions: FontSizeOption[];
   colorOptions: ColorOption[];
   applyFormatting: (formatType: string, value: any) => void;
+  // Paper size related props
+  paperSizeProps?: {
+    paperSize: LetterSize;
+    setPaperSize: (size: LetterSize) => void;
+    paperSizeOptions: PaperSizeOption[];
+    customWidth: string;
+    setCustomWidth: (width: string) => void;
+    customHeight: string;
+    setCustomHeight: (height: string) => void;
+    isCustomSize: boolean;
+  };
+  paperDimensions?: { width: string; height: string };
 }
 
 const LetterEditor: React.FC<LetterEditorProps> = ({
@@ -79,8 +92,21 @@ const LetterEditor: React.FC<LetterEditorProps> = ({
   fontOptions,
   fontSizeOptions,
   colorOptions,
-  applyFormatting
+  applyFormatting,
+  paperSizeProps,
+  paperDimensions
 }) => {
+  // Set default paper dimensions if not provided
+  const dimensions = paperDimensions || { width: '210mm', height: '297mm' };
+  
+  // Calculate a scaled version for display purposes (80% of actual size for better fit)
+  const scaledWidth = `calc(${dimensions.width} * 0.8)`;
+  const scaledHeight = `calc(${dimensions.height} * 0.8)`;
+  
+  // For very small screens, further reduce the scale
+  const isMobile = window.innerWidth < 768;
+  const mobileScaleFactor = isMobile ? 0.5 : 1;
+  
   return (
     <>
       {/* Text formatting and styling options */}
@@ -103,6 +129,7 @@ const LetterEditor: React.FC<LetterEditorProps> = ({
           borderStyleOptions={borderStyleOptions}
           letterStyle={letterStyle}
           updateLetterStyle={updateLetterStyle}
+          paperSizeProps={paperSizeProps}
         />
         
         <LinkPopover
@@ -119,35 +146,43 @@ const LetterEditor: React.FC<LetterEditorProps> = ({
       
       {/* Integrated letter editor with live preview */}
       {content !== undefined && (
-        <Card className={`${letterStyle.paperStyle} ${letterStyle.borderStyle} mb-4 min-h-[60vh] relative`}>
-          <CardContent className="p-4 md:p-6 relative">
-            {/* The preview and textarea are stacked with the textarea being transparent */}
-            {/* LetterPreview visible layer */}
-            <div className="absolute inset-0 p-4 md:p-6 z-10 pointer-events-none">
-              <LetterPreview
-                content={content}
-                documentStyle={documentStyle}
-                inlineStyles={inlineStyles}
-                scrollToQuoteInConversation={scrollToQuoteInConversation}
-                timestamp={new Date().toISOString()}
-                isPreview={false} /* Don't show duplicate text */
+        <div className="flex justify-center mb-4">
+          <Card 
+            className={`${letterStyle.paperStyle} ${letterStyle.borderStyle} relative overflow-hidden`}
+            style={{ 
+              width: `calc(${scaledWidth} * ${mobileScaleFactor})`,
+              height: `calc(${scaledHeight} * ${mobileScaleFactor})`
+            }}
+          >
+            <CardContent className="p-4 md:p-6 relative h-full overflow-hidden">
+              {/* The preview and textarea are stacked with the textarea being transparent */}
+              {/* LetterPreview visible layer */}
+              <div className="absolute inset-0 p-4 md:p-6 z-10 pointer-events-none">
+                <LetterPreview
+                  content={content}
+                  documentStyle={documentStyle}
+                  inlineStyles={inlineStyles}
+                  scrollToQuoteInConversation={scrollToQuoteInConversation}
+                  timestamp={new Date().toISOString()}
+                  isPreview={false} /* Don't show duplicate text */
+                />
+              </div>
+              
+              {/* Textarea input layer that's invisible but functional */}
+              <Textarea
+                ref={textareaRef}
+                placeholder="Write your letter here..."
+                value={content}
+                onChange={(e) => setContent(e.target.value)}
+                className="h-full resize-none font-serif relative z-20 opacity-100 bg-transparent"
+                style={{ 
+                  caretColor: documentStyle.color === 'text-white' ? '#FFFFFF' : '#000000',
+                  color: 'transparent' 
+                }}
               />
-            </div>
-            
-            {/* Textarea input layer that's invisible but functional */}
-            <Textarea
-              ref={textareaRef}
-              placeholder="Write your letter here..."
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              className="min-h-[60vh] resize-none font-serif relative z-20 opacity-100 bg-transparent"
-              style={{ 
-                caretColor: documentStyle.color === 'text-white' ? '#FFFFFF' : '#000000',
-                color: 'transparent' 
-              }}
-            />
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </div>
       )}
     </>
   );

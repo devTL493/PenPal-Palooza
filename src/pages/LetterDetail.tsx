@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -13,6 +14,9 @@ import HighlightStyles from '@/components/letter/HighlightStyles';
 import ComposeLetterButton from '@/components/letter/ComposeLetterButton';
 import FloatingComposeButton from '@/components/letter/FloatingComposeButton';
 import { useMobile } from '@/hooks/use-mobile';
+import { useComposeView } from '@/hooks/useComposeView';
+import SplitPanelLayout from '@/components/letter/SplitPanelLayout';
+import ComposeViewOption from '@/components/letter/ComposeViewOption';
 
 // Sample data (in a real app, this would come from a database or API)
 const inboxLetters = [{
@@ -126,12 +130,20 @@ const LetterDetail = () => {
   const [activeQuoteId, setActiveQuoteId] = useState<string | null>(null);
   const isMobile = useMobile();
 
+  // Use the same view management hook as the compose page
+  const {
+    viewMode,
+    setViewMode,
+    isPanelReversed,
+    isWideScreen,
+    togglePanelPosition
+  } = useComposeView();
+
   const [currentConversation, setCurrentConversation] = useState(() => {
     return id && conversations[id] ? [...conversations[id]] : [];
   });
 
   const letter = inboxLetters.find(letter => letter.id === id);
-
   const conversation = currentConversation.length > 0 ? currentConversation : null;
 
   if (!letter) {
@@ -165,56 +177,140 @@ const LetterDetail = () => {
     navigate('/dashboard');
   };
 
+  // Render the letter content panel
+  const renderLetterPanel = () => (
+    <div className="p-4 h-full overflow-y-auto space-y-6">
+      <div className="mb-2 flex justify-end">
+        <ComposeLetterButton 
+          recipientId={letter.id}
+          recipientName={letter.sender.name}
+          className="hidden sm:flex"
+        />
+      </div>
+      
+      <LetterHeader 
+        letter={letter} 
+        isFavorite={isFavorite} 
+        toggleFavorite={toggleFavorite} 
+      />
+      
+      <LetterContent 
+        content={letter.content} 
+        preview={letter.preview}
+        showContent={true}
+      />
+      
+      <LetterActions 
+        letterId={letter.id} 
+        senderName={letter.sender.name}
+      />
+    </div>
+  );
+
+  // Render the conversation panel
+  const renderConversationPanel = () => (
+    <div className="p-4 h-full overflow-y-auto">
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-lg font-semibold">Conversation with {letter.sender.name || "Pen Pal"}</h2>
+        {isWideScreen && (
+          <Button 
+            variant="outline"
+            size="sm"
+            onClick={togglePanelPosition}
+            title="Switch panel positions"
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Swap Panels
+          </Button>
+        )}
+      </div>
+      
+      {conversation && (
+        <ConversationHistory 
+          conversation={conversation}
+          activeMessageId={id}
+          onScrollToQuote={scrollToQuote}
+          onDeleteConversation={handleDeleteConversation}
+          expandable={true}
+          showComposeButton={false}
+          viewMode={viewMode}
+        />
+      )}
+    </div>
+  );
+
+  const shouldShowConversation = conversation && conversation.length > 0;
+
   return (
     <div className="min-h-screen bg-background">
       <Navigation />
       
-      <main className="container mx-auto px-4 pt-24 pb-16 max-w-screen-2xl">
-        <Button variant="ghost" onClick={() => navigate('/dashboard')} className="mb-4">
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to Inbox
-        </Button>
-        
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
-          <div className="lg:col-span-3 space-y-6">
-            <div className="mb-2 flex justify-end">
-              <ComposeLetterButton 
-                recipientId={letter.id}
-                recipientName={letter.sender.name}
-                className="hidden sm:flex"
-              />
+      <main className="w-full px-4 pt-24 pb-16">
+        <div className="w-full max-w-screen-2xl mx-auto">
+          <div className="mb-4 space-y-4">
+            <div className="flex items-center justify-between">
+              <Button variant="ghost" onClick={() => navigate('/dashboard')}>
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Back to Inbox
+              </Button>
+              
+              {/* View mode selector */}
+              {shouldShowConversation && (
+                <ComposeViewOption 
+                  currentMode={viewMode}
+                  onModeChange={setViewMode}
+                  recipientId={letter.sender.id}
+                />
+              )}
             </div>
-            
-            <LetterHeader 
-              letter={letter} 
-              isFavorite={isFavorite} 
-              toggleFavorite={toggleFavorite} 
-            />
-            
-            <LetterContent 
-              content={letter.content} 
-              preview={letter.preview}
-              showContent={true}
-            />
-            
-            <LetterActions 
-              letterId={letter.id} 
-              senderName={letter.sender.name}
-            />
           </div>
           
-          <div className="lg:col-span-2">
-            {conversation && conversation.length > 1 && (
-              <ConversationHistory 
-                conversation={conversation} 
-                activeMessageId={id}
-                onScrollToQuote={scrollToQuote}
-                onDeleteConversation={handleDeleteConversation}
-                expandable={true}
-                showComposeButton={false}
-              />
-            )}
-          </div>
+          {/* Split panel layout for wide screens with conversation */}
+          {isWideScreen && shouldShowConversation && viewMode === 'side-by-side' ? (
+            <SplitPanelLayout
+              leftPanel={{
+                content: isPanelReversed ? renderConversationPanel() : renderLetterPanel(),
+                config: { defaultSize: isPanelReversed ? 30 : 70, minSize: 25, maxSize: 75 }
+              }}
+              rightPanel={{
+                content: isPanelReversed ? renderLetterPanel() : renderConversationPanel(),
+                config: { defaultSize: isPanelReversed ? 70 : 30, minSize: 25, maxSize: 75 }
+              }}
+              isReversed={isPanelReversed}
+              onToggleLayout={togglePanelPosition}
+              className="h-[calc(100vh-160px)]"
+              toggleButtonPosition="center"
+            />
+          ) : (
+            /* Mobile or overlay layout */
+            <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
+              <div className={`lg:col-span-3 space-y-6 ${viewMode === 'overlay' && shouldShowConversation ? 'relative' : ''}`}>
+                {/* Conversation History overlay */}
+                {shouldShowConversation && viewMode === 'overlay' && (
+                  <div className="absolute inset-0 z-0 opacity-15 pointer-events-none">
+                    <ConversationHistory 
+                      conversation={conversation}
+                      viewMode={viewMode}
+                      showComposeButton={false}
+                      expandable={false}
+                    />
+                  </div>
+                )}
+                
+                {/* Letter Content */}
+                <div className={viewMode === 'overlay' ? 'relative z-10' : ''}>
+                  {renderLetterPanel()}
+                </div>
+              </div>
+              
+              {/* Conversation panel for mobile */}
+              {shouldShowConversation && (!isWideScreen || viewMode !== 'side-by-side') && (
+                <div className="lg:col-span-2">
+                  {renderConversationPanel()}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </main>
       

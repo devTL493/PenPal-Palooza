@@ -31,14 +31,18 @@ export const useComposeView = (): ComposeViewState => {
     };
   }, []);
 
-  // Function to switch panel positions
+  // Function to switch panel positions - fixed by using the new state value in the toast description
   const togglePanelPosition = () => {
-    setIsPanelReversed(prev => !prev);
-    
-    // Show toast notification
-    toast({
-      title: `Panel positions ${isPanelReversed ? "reset" : "swapped"}`,
-      description: `Conversation is now on the ${isPanelReversed ? "right" : "left"}`,
+    setIsPanelReversed(prev => {
+      const newValue = !prev;
+      
+      // Show toast notification with the updated state value
+      toast({
+        title: `Panel positions ${newValue ? "swapped" : "reset"}`,
+        description: `Conversation is now on the ${newValue ? "left" : "right"}`,
+      });
+      
+      return newValue;
     });
   };
 

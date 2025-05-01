@@ -1,6 +1,7 @@
 
 import React, { useState } from 'react';
-import { TextAlignment, InlineStyle, LetterStyle } from '@/types/letter';
+import { TextAlignment, InlineStyle, LetterStyle, LetterSize } from '@/types/letter';
+import { usePaperStyle } from './usePaperStyle';
 
 interface UseLetterFormattingProps {
   initialDocumentStyle?: {
@@ -22,6 +23,7 @@ export function useLetterFormatting({
   initialLetterStyle = {
     paperStyle: 'bg-paper',
     borderStyle: 'border-none',
+    paperSize: 'a4' as LetterSize,
   }
 }: UseLetterFormattingProps = {}) {
   // Style for the whole document
@@ -32,6 +34,14 @@ export function useLetterFormatting({
   
   // Letter styling state
   const [letterStyle, setLetterStyle] = useState<LetterStyle>(initialLetterStyle);
+
+  // Paper size management with the new hook
+  const paperSizeProps = usePaperStyle();
+  const { 
+    paperSize, 
+    setPaperSize, 
+    getPaperDimensions 
+  } = paperSizeProps;
 
   // Popovers state
   const [linkPopoverOpen, setLinkPopoverOpen] = useState(false);
@@ -44,6 +54,15 @@ export function useLetterFormatting({
     setLetterStyle(prev => ({
       ...prev,
       [type]: value
+    }));
+  };
+
+  // Update paper size
+  const updatePaperSize = (size: LetterSize) => {
+    setPaperSize(size);
+    setLetterStyle(prev => ({
+      ...prev,
+      paperSize: size
     }));
   };
   
@@ -146,6 +165,11 @@ export function useLetterFormatting({
     setPaperStylePopoverOpen,
     updateLetterStyle,
     applyFormatting,
-    insertLink
+    insertLink,
+    // Paper size related
+    paperSize,
+    setPaperSize: updatePaperSize,
+    paperSizeProps,
+    getPaperDimensions
   };
 }
