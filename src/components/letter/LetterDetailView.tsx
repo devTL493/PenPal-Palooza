@@ -4,6 +4,7 @@ import SplitPanelLayout from '@/components/letter/SplitPanelLayout';
 import LetterPanel from '@/components/letter/LetterPanel';
 import ConversationPanel from '@/components/letter/ConversationPanel';
 import { ComposeViewMode } from '@/components/letter/ComposeViewOption';
+import ConversationHistory from '@/components/letter/ConversationHistory';
 
 interface LetterDetailViewProps {
   letter: {
