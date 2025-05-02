@@ -56,6 +56,7 @@ export function useLetterFormatting({
   const [linkUrl, setLinkUrl] = useState('');
   const [stylePopoverOpen, setStylePopoverOpen] = useState(false);
   const [paperStylePopoverOpen, setPaperStylePopoverOpen] = useState(false);
+  const [colorPickerOpen, setColorPickerOpen] = useState(false);
 
   const updateLetterStyle = (type: 'paperStyle' | 'borderStyle', value: string) => {
     setLetterStyle(prev => ({
@@ -193,6 +194,8 @@ export function useLetterFormatting({
     setStylePopoverOpen,
     paperStylePopoverOpen,
     setPaperStylePopoverOpen,
+    colorPickerOpen,
+    setColorPickerOpen,
     updateLetterStyle,
     applyFormatting,
     insertLink,

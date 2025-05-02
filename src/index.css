@@ -100,13 +100,32 @@
 
 /* Word processor specific styles */
 .word-processor-canvas {
-  scroll-snap-type: y mandatory;
+  scroll-snap-type: y proximity;
   scroll-behavior: smooth;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(155, 155, 155, 0.5) transparent;
+}
+
+.word-processor-canvas::-webkit-scrollbar {
+  width: 6px;
+}
+
+.word-processor-canvas::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.word-processor-canvas::-webkit-scrollbar-thumb {
+  background-color: rgba(155, 155, 155, 0.5);
+  border-radius: 3px;
 }
 
 .page {
   scroll-snap-align: start;
   scroll-margin-top: 2rem;
+  height: auto !important;
+  overflow: visible !important;
+  break-inside: avoid;
+  position: relative;
 }
 
 .shadow-paper {
@@ -183,4 +202,65 @@ textarea.first-line-indent,
 /* Spellcheck styles */
 textarea:focus {
   outline: none;
+}
+
+/* Page break styles */
+@media print {
+  .page {
+    page-break-after: always;
+  }
+}
+
+/* Selection preservation */
+.toolbar-mousedown-prevent {
+  user-select: none;
+}
+
+/* Color picker custom styles */
+.color-swatch {
+  position: relative;
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: transform 0.1s ease;
+}
+
+.color-swatch:hover {
+  transform: scale(1.1);
+}
+
+.color-swatch.active::after {
+  content: '✓';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: white;
+  text-shadow: 0 0 1px rgba(0,0,0,0.8);
+}
+
+/* Status bar styles */
+.status-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.875rem;
+  color: var(--muted-foreground);
+  padding: 0.5rem 1rem;
+  background-color: var(--secondary);
+  border-top: 1px solid var(--border);
+  border-radius: 0 0 var(--radius) var(--radius);
+}
+
+/* Page count styles */
+.page-count {
+  position: absolute;
+  bottom: 8px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-size: 0.75rem;
+  color: var(--muted-foreground);
+  opacity: 0.6;
 }

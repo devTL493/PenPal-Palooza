@@ -52,8 +52,8 @@ const Compose = () => {
   
   // Render the composer panel with enhanced paper editor
   const renderComposerPanel = () => (
-    <div className="p-4 h-full overflow-y-auto flex flex-col">
-      <div className="mb-4">
+    <div className="h-full overflow-visible flex flex-col">
+      <div className="flex-1 overflow-visible">
         <EnhancedPaperEditor 
           content={content}
           setContent={setContent}
@@ -93,7 +93,7 @@ const Compose = () => {
   console.log('isWideScreen:', isWideScreen);
   console.log('shouldShowConversation:', shouldShowConversation);
   console.log('viewMode:', viewMode);
-  console.log('isPanelReversed:', isPanelReversed); // Add this for debugging
+  console.log('isPanelReversed:', isPanelReversed);
 
   return (
     <div className="min-h-screen bg-background">
