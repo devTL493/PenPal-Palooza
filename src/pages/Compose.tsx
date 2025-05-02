@@ -42,6 +42,7 @@ const Compose = () => {
     setViewMode,
     isPanelReversed,
     isWideScreen,
+    setIsWideScreen,
     togglePanelPosition
   } = useComposeView();
 
