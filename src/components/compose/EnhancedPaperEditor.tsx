@@ -8,8 +8,9 @@ import LetterPreview from '@/components/letter/LetterPreview';
 import { InlineStyle, TextAlignment } from '@/types/letter';
 import { useLetterFormatting } from '@/hooks/useLetterFormatting';
 import useTextSelection from '@/hooks/useTextSelection';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useDragControls } from 'framer-motion';
 import { PaperSizeOption } from '@/hooks/usePaperStyle';
+import { Grip } from 'lucide-react';
 
 interface EnhancedPaperEditorProps {
   content: string;
@@ -25,6 +26,11 @@ const EnhancedPaperEditor: React.FC<EnhancedPaperEditorProps> = ({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const paperRef = useRef<HTMLDivElement>(null);
   const toolbarRef = useRef<HTMLDivElement>(null);
+  const dragControls = useDragControls();
+  
+  // Toolbar positioning state
+  const [isToolbarDetached, setIsToolbarDetached] = useState(false);
+  const [toolbarPosition, setToolbarPosition] = useState({ x: 0, y: 0 });
   
   // Initialize letter formatting hooks
   const letterFormatting = useLetterFormatting({
@@ -110,6 +116,20 @@ const EnhancedPaperEditor: React.FC<EnhancedPaperEditorProps> = ({
     { value: 'border-ornate', label: 'Ornate', description: 'Decorative ornamental border' }
   ];
   
+  // Function to start drag operation
+  const startDrag = (event: React.PointerEvent) => {
+    dragControls.start(event, { snapToCursor: false });
+  };
+  
+  // Toggle toolbar detached state
+  const toggleToolbarDetached = () => {
+    setIsToolbarDetached(!isToolbarDetached);
+    // Reset position when re-attaching
+    if (isToolbarDetached) {
+      setToolbarPosition({ x: 0, y: 0 });
+    }
+  };
+  
   // Focus the textarea when clicking anywhere on the paper
   const handlePaperClick = (e: React.MouseEvent) => {
     if (textareaRef.current && e.target === paperRef.current) {
@@ -149,13 +169,47 @@ const EnhancedPaperEditor: React.FC<EnhancedPaperEditorProps> = ({
         {isToolbarVisible && (
           <motion.div 
             ref={toolbarRef}
-            className="sticky top-24 z-50 mb-4 rounded-lg bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm shadow-lg border border-gray-100 dark:border-gray-800 py-2 px-4"
+            className={`${!isToolbarDetached ? 'sticky top-24' : ''} z-50 mb-4 rounded-lg bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm shadow-lg border border-gray-100 dark:border-gray-800 py-2 px-4`}
             initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
+            animate={{ 
+              opacity: 1, 
+              y: isToolbarDetached ? toolbarPosition.y : 0,
+              x: isToolbarDetached ? toolbarPosition.x : 0,
+              position: isToolbarDetached ? 'fixed' : 'sticky',
+            }}
             exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.2 }}
+            drag={isToolbarDetached}
+            dragControls={dragControls}
+            dragMomentum={false}
+            dragConstraints={{ left: 0, right: window.innerWidth - 300, top: 0, bottom: window.innerHeight - 80 }}
+            onDragEnd={(_, info) => {
+              if (isToolbarDetached) {
+                setToolbarPosition({
+                  x: toolbarPosition.x + info.offset.x,
+                  y: toolbarPosition.y + info.offset.y
+                });
+              }
+            }}
           >
             <div className="flex flex-wrap items-center gap-2">
+              {/* Grip handle for dragging */}
+              <div 
+                className={`cursor-grab active:cursor-grabbing p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700`}
+                onPointerDown={startDrag}
+              >
+                <Grip size={16} />
+              </div>
+              
+              {/* Detach/attach button */}
+              <button 
+                className={`p-1 rounded text-xs ${isToolbarDetached ? 'bg-primary text-white' : 'bg-gray-100 dark:bg-gray-700'}`}
+                onClick={toggleToolbarDetached}
+                title={isToolbarDetached ? "Attach toolbar" : "Detach toolbar"}
+              >
+                {isToolbarDetached ? "Attach" : "Detach"}
+              </button>
+              
               <TextFormattingToolbar
                 selectionRange={selectionRange}
                 activeTextFormat={activeTextFormat}
