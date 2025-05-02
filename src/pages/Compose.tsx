@@ -12,6 +12,7 @@ import ConversationHistory from '@/components/letter/ConversationHistory';
 import ComposeHeader from '@/components/compose/ComposeHeader';
 import ComposeMobileLayout from '@/components/compose/ComposeMobileLayout';
 import { useComposeView } from '@/hooks/useComposeView';
+import EnhancedPaperEditor from '@/components/compose/EnhancedPaperEditor';
 
 const Compose = () => {
   const [searchParams] = useSearchParams();
@@ -49,20 +50,17 @@ const Compose = () => {
   // Always force conversation to be visible if it exists
   const shouldShowConversation = conversation && conversation.length > 0;
   
-  // Render the composer panel
+  // Render the composer panel with enhanced paper editor
   const renderComposerPanel = () => (
-    <ComposeMainContent 
-      recipient={recipient}
-      subject={subject}
-      setSubject={setSubject}
-      content={content}
-      setContent={setContent}
-      conversation={conversation}
-      isInConversationContext={isInConversationContext}
-      handleSend={handleSend}
-      viewMode={viewMode}
-      isPanelReversed={isPanelReversed}
-    />
+    <div className="p-4 h-full overflow-y-auto flex flex-col">
+      <div className="mb-4">
+        <EnhancedPaperEditor 
+          content={content}
+          setContent={setContent}
+          onSend={handleSend}
+        />
+      </div>
+    </div>
   );
 
   // Render the conversation panel

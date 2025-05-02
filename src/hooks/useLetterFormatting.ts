@@ -15,7 +15,7 @@ interface UseLetterFormattingProps {
 
 export function useLetterFormatting({
   initialDocumentStyle = {
-    font: 'font-serif',
+    font: 'font-mono', // Changed to mono font for typewriter-style
     size: 'text-lg',
     color: 'text-black',
     alignment: 'text-left' as TextAlignment,
@@ -40,8 +40,15 @@ export function useLetterFormatting({
   const { 
     paperSize, 
     setPaperSize, 
-    getPaperDimensions 
+    getPaperDimensions,
+    measurementUnit,
+    setMeasurementUnit 
   } = paperSizeProps;
+
+  // Auto-hide toolbar state
+  const [isToolbarVisible, setIsToolbarVisible] = useState(true);
+  const [isTyping, setIsTyping] = useState(false);
+  const [lastTypingTime, setLastTypingTime] = useState(0);
 
   // Popovers state
   const [linkPopoverOpen, setLinkPopoverOpen] = useState(false);
@@ -145,6 +152,29 @@ export function useLetterFormatting({
     setLinkUrl('');
     setLinkPopoverOpen(false);
   };
+  
+  // Toolbar visibility management based on typing
+  const handleContentChange = () => {
+    setIsTyping(true);
+    setLastTypingTime(Date.now());
+    setIsToolbarVisible(false); // Hide toolbar when typing
+    
+    // Setup a timer to show toolbar again after user stops typing for 2 seconds
+    const typingTimeout = setTimeout(() => {
+      if (Date.now() - lastTypingTime > 1900) { // Check if no typing for ~2 seconds
+        setIsTyping(false);
+      }
+    }, 2000);
+    
+    return () => clearTimeout(typingTimeout);
+  };
+  
+  // Show toolbar on mouse movement
+  const handleMouseMove = () => {
+    if (!isTyping) {
+      setIsToolbarVisible(true);
+    }
+  };
 
   return {
     documentStyle,
@@ -170,6 +200,14 @@ export function useLetterFormatting({
     paperSize,
     setPaperSize: updatePaperSize,
     paperSizeProps,
-    getPaperDimensions
+    getPaperDimensions,
+    measurementUnit,
+    setMeasurementUnit,
+    // Toolbar visibility
+    isToolbarVisible,
+    setIsToolbarVisible,
+    isTyping,
+    handleContentChange,
+    handleMouseMove
   };
 }

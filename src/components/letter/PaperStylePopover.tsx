@@ -27,6 +27,8 @@ interface PaperStylePopoverProps {
     customHeight: string;
     setCustomHeight: (height: string) => void;
     isCustomSize: boolean;
+    measurementUnit?: 'mm' | 'in';
+    setMeasurementUnit?: (unit: 'mm' | 'in') => void;
   };
 }
 
@@ -103,6 +105,8 @@ const PaperStylePopover: React.FC<PaperStylePopoverProps> = ({
                 customHeight={paperSizeProps.customHeight}
                 setCustomHeight={paperSizeProps.setCustomHeight}
                 isCustomSize={paperSizeProps.isCustomSize}
+                measurementUnit={paperSizeProps.measurementUnit}
+                setMeasurementUnit={paperSizeProps.setMeasurementUnit}
               />
             </div>
           )}

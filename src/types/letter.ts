@@ -1,4 +1,3 @@
-
 export interface ConversationMessage {
   id: string;
   sender: {
@@ -12,8 +11,8 @@ export interface ConversationMessage {
 
 export type TextAlignment = 'text-left' | 'text-center' | 'text-right';
 
-// New type for paper sizes
-export type LetterSize = 'a4' | 'a5' | 'a6' | 'b4' | 'b5' | 'b6' | 'custom';
+// Updated type for paper sizes
+export type LetterSize = 'a3' | 'a4' | 'a5' | 'a6' | 'b3' | 'b4' | 'b5' | 'b6' | 'letter' | 'legal' | 'custom';
 
 export interface InlineStyle {
   start: number;
@@ -32,7 +31,7 @@ export interface InlineStyle {
 export interface LetterStyle {
   paperStyle: string;
   borderStyle: string;
-  paperSize?: LetterSize; // Added paperSize property
+  paperSize?: LetterSize; // Paper size property
 }
 
 export interface FontOption {
@@ -131,4 +130,3 @@ export interface Conversation {
   last_message?: Letter;
   unread_count?: number;
 }
-
