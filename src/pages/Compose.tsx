@@ -71,7 +71,7 @@ const Compose = () => {
         <Button 
           variant="outline"
           size="sm"
-          onClick={togglePanelPosition} // Direct function reference
+          onClick={togglePanelPosition}
           title="Switch panel positions"
           className="lg:hidden"
         >
@@ -126,7 +126,7 @@ const Compose = () => {
                 config: { defaultSize: isPanelReversed ? 70 : 30, minSize: 25, maxSize: 75 }
               }}
               isReversed={isPanelReversed}
-              onToggleLayout={togglePanelPosition} // Direct function reference
+              onToggleLayout={togglePanelPosition}
               className="h-[calc(100vh-160px)]"
               toggleButtonPosition="center"
             />
@@ -136,7 +136,7 @@ const Compose = () => {
               renderComposerPanel={renderComposerPanel}
               conversation={conversation}
               shouldShowConversation={shouldShowConversation}
-              togglePanelPosition={togglePanelPosition} // Direct function reference
+              togglePanelPosition={togglePanelPosition}
             />
           )}
         </div>
