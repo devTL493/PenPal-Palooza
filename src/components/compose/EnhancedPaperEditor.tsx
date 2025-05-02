@@ -25,7 +25,7 @@ const EnhancedPaperEditor: React.FC<EnhancedPaperEditorProps> = ({
   setContent,
   onSend
 }) => {
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const editorRef = useRef<HTMLDivElement>(null);
   const paperRef = useRef<HTMLDivElement>(null);
   const toolbarRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLDivElement>(null);
@@ -44,10 +44,11 @@ const EnhancedPaperEditor: React.FC<EnhancedPaperEditorProps> = ({
   
   // Color picker state
   const [showColorPicker, setShowColorPicker] = useState(false);
-  const [recentColors, setRecentColors] = useState<string[]>(['#000000', '#0000FF', '#FF0000']);
+  const [recentColors, setRecentColors] = useState<string[]>([]);
   
   // Selection preservation
   const [savedSelection, setSavedSelection] = useState<{start: number, end: number} | null>(null);
+  const [lastSelection, setLastSelection] = useState<Range | null>(null);
   
   // Initialize letter formatting hooks
   const letterFormatting = useLetterFormatting({
@@ -87,7 +88,7 @@ const EnhancedPaperEditor: React.FC<EnhancedPaperEditorProps> = ({
 
   // Text selection state management
   const textSelection = useTextSelection({
-    textareaRef,
+    editorRef,
     content,
     inlineStyles,
     documentStyle
@@ -116,6 +117,21 @@ const EnhancedPaperEditor: React.FC<EnhancedPaperEditorProps> = ({
     { value: 'text-lg', label: 'Large' },
     { value: 'text-xl', label: 'X-Large' },
   ];
+  
+  // Load recent colors from localStorage
+  useEffect(() => {
+    const saved = localStorage.getItem('recentTextColors');
+    if (saved) {
+      try {
+        const colors = JSON.parse(saved);
+        if (Array.isArray(colors)) {
+          setRecentColors(colors.slice(0, 3));
+        }
+      } catch (e) {
+        console.error('Error loading recent colors:', e);
+      }
+    }
+  }, []);
   
   const colorOptions = [
     { value: 'text-black', label: 'Black', color: '#000000' },
@@ -154,15 +170,13 @@ const EnhancedPaperEditor: React.FC<EnhancedPaperEditorProps> = ({
     { value: 'border-ornate', label: 'Ornate', description: 'Decorative ornamental border' }
   ];
   
-  // Save current selection on mouseup/keyup
+  // Save selection on mouseup/keyup
   useEffect(() => {
     const handleSelectionChange = () => {
-      if (textareaRef.current) {
-        const start = textareaRef.current.selectionStart;
-        const end = textareaRef.current.selectionEnd;
-        if (start !== end) {
-          setSavedSelection({ start, end });
-        }
+      const selection = window.getSelection();
+      if (selection && selection.rangeCount > 0) {
+        const range = selection.getRangeAt(0);
+        setLastSelection(range.cloneRange());
       }
     };
 
@@ -175,22 +189,24 @@ const EnhancedPaperEditor: React.FC<EnhancedPaperEditorProps> = ({
     };
   }, []);
   
-  // Prevent mouse down from losing focus
+  // Prevent mouse down from losing focus by preventing default
   const handleToolbarMouseDown = (e: React.MouseEvent) => {
     e.preventDefault();
   };
   
   // Restore selection before applying formatting
   const handleApplyFormattingWithSelection = (formatType: string, value: any) => {
-    // If we have a saved selection, restore it
-    if (savedSelection && textareaRef.current) {
-      textareaRef.current.focus();
-      textareaRef.current.setSelectionRange(savedSelection.start, savedSelection.end);
-      setSelectionRange(savedSelection);
+    // Restore selection if available
+    if (lastSelection) {
+      const selection = window.getSelection();
+      if (selection) {
+        selection.removeAllRanges();
+        selection.addRange(lastSelection);
+      }
     }
     
     // Now apply the formatting
-    applyFormatting(formatType, value, selectionRange || savedSelection, activeTextFormat);
+    applyFormatting(formatType, value);
   };
   
   // Handle new color addition
@@ -198,15 +214,21 @@ const EnhancedPaperEditor: React.FC<EnhancedPaperEditorProps> = ({
     // Add to recent colors, keep only the 3 most recent
     setRecentColors(prev => {
       const filtered = prev.filter(c => c !== color); // Remove if already exists
-      return [color, ...filtered].slice(0, 3); // Add to front, keep only 3
+      const updated = [color, ...filtered].slice(0, 3); // Add to front, keep only 3
+      
+      // Save to localStorage
+      localStorage.setItem('recentTextColors', JSON.stringify(updated));
+      return updated;
     });
     
     // Apply color to selection
-    if (savedSelection && textareaRef.current) {
-      textareaRef.current.focus();
-      textareaRef.current.setSelectionRange(savedSelection.start, savedSelection.end);
-      setSelectionRange(savedSelection);
-      applyFormatting('color', color, savedSelection, activeTextFormat);
+    if (lastSelection) {
+      const selection = window.getSelection();
+      if (selection) {
+        selection.removeAllRanges();
+        selection.addRange(lastSelection);
+      }
+      applyFormatting('color', color);
     }
   };
   
@@ -224,107 +246,61 @@ const EnhancedPaperEditor: React.FC<EnhancedPaperEditorProps> = ({
     }
   };
   
-  // Focus the textarea when clicking anywhere on the paper
-  const handlePaperClick = (e: React.MouseEvent) => {
-    if (textareaRef.current && e.target === paperRef.current) {
-      textareaRef.current.focus();
-    }
-  };
-  
-  // Make sure toolbar is visible on selection
+  // Set up contentEditable
   useEffect(() => {
-    if (selectionRange) {
-      setIsToolbarVisible(true);
+    if (editorRef.current) {
+      editorRef.current.setAttribute('contenteditable', 'true');
+      editorRef.current.setAttribute('spellcheck', 'true');
     }
-  }, [selectionRange, setIsToolbarVisible]);
+  }, []);
   
-  // Apply formatting handler
-  const handleApplyFormatting = (formatType: string, value: any) => {
-    handleApplyFormattingWithSelection(formatType, value);
-  };
-  
-  // Link insertion handler
-  const handleInsertLink = () => {
-    insertLink(selectionRange || savedSelection, linkUrl);
-  };
-  
-  // Calculate responsive dimensions
-  const viewportWidth = window.innerWidth;
-  const maxWidth = Math.min(parseFloat(dimensions.width), viewportWidth * 0.9);
-  const scale = maxWidth / parseFloat(dimensions.width);
-  
-  // Calculate margins for the paper (default to 24mm margins)
-  const marginSize = paperSizeProps.measurementUnit === 'mm' ? '24mm' : '1in';
-  
-  // Word count calculation
-  useEffect(() => {
-    if (!content) {
-      setWordCount(0);
-      return;
-    }
+  // Handle editor input to update content
+  const handleEditorInput = (e: React.FormEvent<HTMLDivElement>) => {
+    const newContent = e.currentTarget.innerHTML;
+    setContent(newContent);
+    handleContentChange();
     
-    const words = content.trim().split(/\s+/);
+    // Update word count
+    const text = e.currentTarget.textContent || '';
+    const words = text.trim().split(/\s+/).filter(word => word.length > 0);
     setWordCount(words.length);
-  }, [content]);
+    
+    // Update page count based on content height
+    updatePageCount();
+  };
   
-  // Calculate actual content height to determine page breaks
-  const calculateContentHeight = useCallback(() => {
-    if (!textareaRef.current || !content) return 0;
+  // Calculate page count based on content height
+  const updatePageCount = useCallback(() => {
+    if (!editorRef.current || !paperRef.current) return;
     
-    // Create a hidden div with the same styles as the textarea to measure content
-    const hiddenDiv = document.createElement('div');
-    hiddenDiv.style.position = 'absolute';
-    hiddenDiv.style.visibility = 'hidden';
-    hiddenDiv.style.height = 'auto';
-    hiddenDiv.style.width = textareaRef.current.offsetWidth + 'px';
-    hiddenDiv.style.fontFamily = getComputedStyle(textareaRef.current).fontFamily;
-    hiddenDiv.style.fontSize = getComputedStyle(textareaRef.current).fontSize;
-    hiddenDiv.style.lineHeight = getComputedStyle(textareaRef.current).lineHeight;
-    hiddenDiv.style.whiteSpace = 'pre-wrap';
-    hiddenDiv.style.wordBreak = 'break-word';
-    hiddenDiv.style.padding = getComputedStyle(textareaRef.current).padding;
-    hiddenDiv.style.textIndent = '1.27cm';
-    hiddenDiv.textContent = content;
+    const contentHeight = editorRef.current.scrollHeight;
+    const pageHeight = parseFloat(dimensions.height) * 3.7795275591; // Convert mm to px
+    const marginSize = '2cm'; // Standard margin size
+    const marginInPx = parseFloat(marginSize) * 37.7952; // Convert cm to px (approximate)
     
-    document.body.appendChild(hiddenDiv);
-    const contentHeight = hiddenDiv.offsetHeight;
-    document.body.removeChild(hiddenDiv);
+    // Available height per page (subtracting margins)
+    const pageInnerHeight = pageHeight - (marginInPx * 2); 
     
-    return contentHeight;
-  }, [content]);
-  
-  // Page count estimation based on actual content height
-  useEffect(() => {
-    if (!textareaRef.current || !content) {
-      setPageCount(1);
-      return;
-    }
-    
-    const contentHeight = calculateContentHeight();
-    
-    // Get page height minus margins
-    const marginSizeInPx = marginSize.endsWith('mm')
-      ? parseFloat(marginSize) * 3.7795275591 // Convert mm to px (approximate)
-      : parseFloat(marginSize) * 96; // Convert inches to px (approximate)
-    
-    const pageInnerHeight = parseFloat(dimensions.height) * 3.7795275591 - (marginSizeInPx * 2); // Convert to px
-    
-    // Calculate pages needed and update state
+    // Calculate pages needed
     const pagesNeeded = Math.max(1, Math.ceil(contentHeight / pageInnerHeight));
-    
     setPageCount(pagesNeeded);
-  }, [content, dimensions.height, marginSize, calculateContentHeight]);
+  }, [dimensions.height]);
+  
+  // Update page count when content changes
+  useEffect(() => {
+    updatePageCount();
+  }, [content, updatePageCount]);
   
   // Determine current page from scroll position
   const handleScroll = useCallback(() => {
     if (!canvasRef.current) return;
     
     const scrollTop = canvasRef.current.scrollTop;
-    const pageHeight = parseFloat(dimensions.height) * 3.7795275591; // Convert to px
+    const pageHeight = parseFloat(dimensions.height) * 3.7795275591; // Convert mm to px
     const currentPageNumber = Math.floor(scrollTop / pageHeight) + 1;
     
-    setCurrentPage(currentPageNumber);
-  }, [dimensions.height]);
+    setCurrentPage(Math.min(currentPageNumber, pageCount));
+  }, [dimensions.height, pageCount]);
   
   // Add scroll event listener
   useEffect(() => {
@@ -343,15 +319,15 @@ const EnhancedPaperEditor: React.FC<EnhancedPaperEditorProps> = ({
         switch(e.key.toLowerCase()) {
           case 'b':
             e.preventDefault();
-            handleApplyFormatting('bold', null);
+            handleApplyFormattingWithSelection('bold', null);
             break;
           case 'i':
             e.preventDefault();
-            handleApplyFormatting('italic', null);
+            handleApplyFormattingWithSelection('italic', null);
             break;
           case 'u':
             e.preventDefault();
-            handleApplyFormatting('underline', null);
+            handleApplyFormattingWithSelection('underline', null);
             break;
           case 'escape':
           case 'esc':
@@ -366,7 +342,7 @@ const EnhancedPaperEditor: React.FC<EnhancedPaperEditorProps> = ({
     
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [handleApplyFormatting, isToolbarVisible, setIsToolbarVisible]);
+  }, [handleApplyFormattingWithSelection, isToolbarVisible, setIsToolbarVisible]);
   
   // Toggle rulers
   const toggleRulers = () => {
@@ -385,7 +361,7 @@ const EnhancedPaperEditor: React.FC<EnhancedPaperEditorProps> = ({
         {isToolbarVisible && (
           <motion.div 
             ref={toolbarRef}
-            className={`${!isToolbarDetached ? 'sticky top-0 w-full' : ''} z-50 mb-4 rounded-lg bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm shadow-lg border border-gray-100 dark:border-gray-800 py-2 px-4`}
+            className={`${!isToolbarDetached ? 'sticky top-0 w-full' : ''} z-50 mb-4 rounded-lg bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm shadow-lg border border-gray-100 dark:border-gray-800 py-2 px-4 toolbar-mousedown-prevent`}
             initial={{ opacity: 0, y: -10 }}
             animate={{ 
               opacity: 1, 
@@ -428,24 +404,24 @@ const EnhancedPaperEditor: React.FC<EnhancedPaperEditorProps> = ({
               </button>
               
               <TextFormattingToolbar
-                selectionRange={selectionRange || savedSelection}
+                selectionRange={selectionRange}
                 activeTextFormat={activeTextFormat}
                 fontOptions={fontOptions}
                 fontSizeOptions={fontSizeOptions}
                 colorOptions={colorOptions}
                 stylePopoverOpen={stylePopoverOpen}
                 setStylePopoverOpen={setStylePopoverOpen}
-                applyFormatting={handleApplyFormatting}
+                applyFormatting={handleApplyFormattingWithSelection}
               />
               
               <ColorPickerPopover
                 colorPickerOpen={colorPickerOpen}
                 setColorPickerOpen={setColorPickerOpen}
-                selectionRange={selectionRange || savedSelection}
+                selectionRange={selectionRange}
                 onAddCustomColor={handleAddCustomColor}
                 recentColors={recentColors}
                 colorOptions={colorOptions}
-                applyFormatting={handleApplyFormatting}
+                applyFormatting={handleApplyFormattingWithSelection}
               />
               
               <PaperStylePopover
@@ -468,12 +444,12 @@ const EnhancedPaperEditor: React.FC<EnhancedPaperEditorProps> = ({
               <LinkPopover
                 linkPopoverOpen={linkPopoverOpen}
                 setLinkPopoverOpen={setLinkPopoverOpen}
-                selectionRange={selectionRange || savedSelection}
+                selectionRange={selectionRange}
                 linkUrl={linkUrl}
                 setLinkUrl={setLinkUrl}
                 linkText={linkText}
                 setLinkText={setLinkText}
-                onInsertLink={handleInsertLink}
+                onInsertLink={insertLink}
               />
               
               {/* Ruler toggle button */}
@@ -494,8 +470,8 @@ const EnhancedPaperEditor: React.FC<EnhancedPaperEditorProps> = ({
       {/* Canvas with scroll snap */}
       <div 
         ref={canvasRef}
-        className="word-processor-canvas w-full overflow-auto scroll-smooth max-h-[calc(100vh-200px)]"
-        style={{ scrollSnapType: 'y proximity' }}
+        className="word-processor-canvas w-full overflow-auto h-[calc(100vh-200px)]"
+        style={{ scrollSnapType: 'y mandatory' }}
       >
         {/* Rulers (conditionally rendered) */}
         {showRulers && (
@@ -518,77 +494,51 @@ const EnhancedPaperEditor: React.FC<EnhancedPaperEditorProps> = ({
           >
             {/* Generate pages based on pageCount */}
             {Array.from({ length: pageCount }).map((_, index) => (
-              <Card 
+              <div 
                 key={`page-${index + 1}`}
                 ref={index === 0 ? paperRef : undefined}
-                className={`${letterStyle.paperStyle} ${letterStyle.borderStyle} page texture shadow-paper overflow-hidden transition-all duration-300 relative mb-6`}
+                className={`${letterStyle.paperStyle} ${letterStyle.borderStyle} page texture shadow-paper scroll-snap-align-start mb-6 cursor-text`}
                 style={{ 
                   width: dimensions.width,
-                  height: 'auto', // Auto height for proper content overflow
-                  minHeight: dimensions.height, // Minimum height ensures empty pages still render at full size
-                  scrollSnapAlign: 'start',
-                  scrollMarginTop: '1rem'
+                  minHeight: dimensions.height,
+                  height: 'auto',
+                  padding: '2cm',
+                  boxSizing: 'border-box',
+                  position: 'relative'
                 }}
-                onClick={index === 0 ? handlePaperClick : undefined}
               >
-                <CardContent 
-                  className="p-0 relative"
-                  style={{ 
-                    padding: marginSize,
-                    height: 'auto', // Auto height for content
-                    minHeight: `calc(${dimensions.height} - ${marginSize} - ${marginSize})` // Ensure minimum height
-                  }}
-                >
-                  {/* Only show content in the first page - other pages are just visual placeholders */}
-                  {index === 0 && (
-                    <>
-                      {/* Text overlay for styling */}
-                      <div 
-                        className="z-10 pointer-events-none overflow-visible" 
-                        style={{ 
-                          textIndent: '1.27cm', 
-                          lineHeight: '1.5',
-                          whiteSpace: 'pre-wrap'
-                        }}
-                      >
-                        <LetterPreview
-                          content={content}
-                          documentStyle={documentStyle}
-                          inlineStyles={inlineStyles}
-                          scrollToQuoteInConversation={() => {}}
-                          isPreview={false}
-                        />
-                      </div>
-                      
-                      {/* Actual textarea for input */}
-                      <textarea
-                        ref={textareaRef}
-                        value={content}
-                        onChange={(e) => {
-                          setContent(e.target.value);
-                          handleContentChange();
-                        }}
-                        className={`w-full h-full resize-none bg-transparent absolute inset-0 z-20 ${documentStyle.font} focus:outline-none`}
-                        style={{ 
-                          caretColor: documentStyle.color === 'text-white' ? '#FFFFFF' : '#000000',
-                          color: 'transparent',
-                          lineHeight: '1.5',
-                          textIndent: '1.27cm',
-                          whiteSpace: 'pre-wrap',
-                        }}
-                        placeholder="Start writing your letter..."
-                        onClick={() => setIsToolbarVisible(true)}
-                        spellCheck={true}
-                      />
-                    </>
-                  )}
-                  
-                  {/* Page footer */}
-                  <div className="absolute bottom-2 right-0 left-0 text-center text-xs text-gray-400">
-                    Page {index + 1} of {pageCount}
+                {/* Only the first page is editable, others are visual placeholders */}
+                {index === 0 ? (
+                  <div 
+                    ref={editorRef}
+                    className={`${documentStyle.font} first-line-indent`}
+                    onInput={handleEditorInput}
+                    style={{ 
+                      minHeight: `calc(${dimensions.height} - 4cm)`,
+                      outline: 'none',
+                      whiteSpace: 'pre-wrap',
+                      lineHeight: 1.5
+                    }}
+                    dangerouslySetInnerHTML={{ __html: content }}
+                  />
+                ) : (
+                  <div 
+                    className={`${documentStyle.font} first-line-indent`}
+                    style={{ 
+                      minHeight: `calc(${dimensions.height} - 4cm)`,
+                      whiteSpace: 'pre-wrap',
+                      lineHeight: 1.5
+                    }}
+                  >
+                    {/* Visual placeholder for additional pages */}
                   </div>
-                </CardContent>
-              </Card>
+                )}
+                
+                {/* Page footer */}
+                <div className="absolute bottom-2 right-0 left-0 text-center text-xs text-gray-400">
+                  Page {index + 1} of {pageCount}
+                </div>
+              </div>
             ))}
           </div>
         </div>

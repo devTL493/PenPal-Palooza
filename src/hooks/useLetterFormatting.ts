@@ -74,59 +74,101 @@ export function useLetterFormatting({
     }));
   };
   
+  // Apply formatting using execCommand for contentEditable
   const applyFormatting = (
     formatType: string, 
-    value: any, 
-    selectionRange: { start: number; end: number } | null,
-    activeTextFormat: any
+    value: any
   ) => {
-    if (!selectionRange) return;
-    
-    const { start, end } = selectionRange;
-    
-    // Create a new style object for this selection
-    const newStyle: InlineStyle = {
-      start,
-      end,
-      ...activeTextFormat
-    };
-    
-    // Update the specific format that was changed
-    switch (formatType) {
-      case 'bold':
-        newStyle.isBold = !activeTextFormat.isBold;
-        break;
-      case 'italic':
-        newStyle.isItalic = !activeTextFormat.isItalic;
-        break;
-      case 'underline':
-        newStyle.isUnderline = !activeTextFormat.isUnderline;
-        break;
-      case 'font':
-        newStyle.font = value;
-        break;
-      case 'size':
-        newStyle.size = value;
-        break;
-      case 'color':
-        newStyle.color = value;
-        break;
-      case 'alignment':
-        newStyle.alignment = value as TextAlignment;
-        // Alignment affects the whole content
-        setDocumentStyle(prev => ({ ...prev, alignment: value as TextAlignment }));
-        break;
+    try {
+      switch (formatType) {
+        case 'bold':
+          document.execCommand('bold');
+          break;
+        case 'italic':
+          document.execCommand('italic');
+          break;
+        case 'underline':
+          document.execCommand('underline');
+          break;
+        case 'font':
+          // Apply font family using CSS classes
+          applyInlineStyle('fontFamily', value);
+          break;
+        case 'size':
+          // Apply font size using CSS classes
+          applyInlineStyle('fontSize', value);
+          break;
+        case 'color':
+          document.execCommand('foreColor', false, value);
+          break;
+        case 'alignment':
+          if (value === 'text-left') {
+            document.execCommand('justifyLeft');
+          } else if (value === 'text-center') {
+            document.execCommand('justifyCenter');
+          } else if (value === 'text-right') {
+            document.execCommand('justifyRight');
+          }
+          break;
+        case 'removeFormat':
+          document.execCommand('removeFormat');
+          break;
+      }
+    } catch (err) {
+      console.error('Error applying formatting:', err);
     }
-    
-    // Add this style to the array
-    setInlineStyles(prev => [...prev, newStyle]);
+  };
+  
+  // Helper to apply inline styles when execCommand doesn't have direct equivalent
+  const applyInlineStyle = (property: string, value: string) => {
+    try {
+      const selection = window.getSelection();
+      if (!selection || selection.rangeCount === 0) return;
+      
+      const range = selection.getRangeAt(0);
+      
+      if (range.collapsed) return; // No selection
+      
+      // Create span with the desired style
+      const span = document.createElement('span');
+      
+      // Apply the style based on property
+      if (property === 'fontFamily') {
+        // Map font class to actual font-family
+        const fontMap: {[key: string]: string} = {
+          'font-mono': '"Courier New", Courier, monospace',
+          'font-serif': 'Georgia, "Times New Roman", serif',
+          'font-sans': 'Arial, Helvetica, sans-serif'
+        };
+        span.style.fontFamily = fontMap[value] || value;
+      } else if (property === 'fontSize') {
+        // Map size class to actual size
+        const sizeMap: {[key: string]: string} = {
+          'text-sm': '0.875rem',
+          'text-base': '1rem',
+          'text-lg': '1.125rem',
+          'text-xl': '1.25rem'
+        };
+        span.style.fontSize = sizeMap[value] || value;
+      }
+      
+      // Apply span to selection
+      const contents = range.extractContents();
+      span.appendChild(contents);
+      range.insertNode(span);
+      
+      // Reselect the content
+      selection.removeAllRanges();
+      const newRange = document.createRange();
+      newRange.selectNodeContents(span);
+      selection.addRange(newRange);
+    } catch (err) {
+      console.error('Error applying inline style:', err);
+    }
   };
 
-  const insertLink = (
-    selectionRange: { start: number; end: number } | null,
-    url: string
-  ) => {
-    if (!selectionRange || !url) return;
+  const insertLink = (url: string) => {
+    if (!url) return;
 
     // Simple URL validation
     let finalUrl = url;
@@ -134,24 +176,16 @@ export function useLetterFormatting({
       finalUrl = `https://${url}`;
     }
 
-    const { start, end } = selectionRange;
-
-    // Create new style for the link
-    const newLinkStyle: InlineStyle = {
-      start,
-      end,
-      isLink: true,
-      linkUrl: finalUrl,
-      color: 'text-blue-600',
-      isUnderline: true,
-    };
-
-    setInlineStyles(prev => [...prev, newLinkStyle]);
-    
-    // Reset link fields
-    setLinkText('');
-    setLinkUrl('');
-    setLinkPopoverOpen(false);
+    try {
+      document.execCommand('createLink', false, finalUrl);
+      
+      // Reset link fields
+      setLinkText('');
+      setLinkUrl('');
+      setLinkPopoverOpen(false);
+    } catch (err) {
+      console.error('Error inserting link:', err);
+    }
   };
   
   // Toolbar visibility management based on typing
