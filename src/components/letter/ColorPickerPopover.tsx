@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
-import { ColorPicker, Check } from "lucide-react";
+import { Palette, Check } from "lucide-react";
 
 interface ColorPickerPopoverProps {
   colorPickerOpen: boolean;
@@ -54,7 +54,7 @@ const ColorPickerPopover: React.FC<ColorPickerPopoverProps> = ({
           disabled={!selectionRange}
           className="relative"
         >
-          <ColorPicker className="h-4 w-4 mr-2" />
+          <Palette className="h-4 w-4 mr-2" />
           Text Color
           <span 
             className="absolute bottom-1 right-1 h-2 w-2 rounded-full border" 

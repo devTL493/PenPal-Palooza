@@ -9,7 +9,7 @@ import { useLetterFormatting } from '@/hooks/useLetterFormatting';
 import useTextSelection from '@/hooks/useTextSelection';
 import { motion, AnimatePresence, useDragControls } from 'framer-motion';
 import { PaperSizeOption } from '@/hooks/usePaperStyle';
-import { Grip, Ruler, ColorPicker } from 'lucide-react';
+import { Grip, Ruler, Palette } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import ColorPickerPopover from '@/components/letter/ColorPickerPopover';
