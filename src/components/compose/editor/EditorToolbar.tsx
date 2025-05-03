@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Bold, Italic, Underline, Type, Grip, X } from 'lucide-react';
@@ -33,6 +32,11 @@ interface EditorToolbarProps {
     paperSize: string;
     setPaperSize: (size: string) => void;
     paperSizeOptions: PaperSizeOption[];
+    customWidth: string;
+    setCustomWidth: (width: string) => void;
+    customHeight: string;
+    setCustomHeight: (height: string) => void;
+    isCustomSize: boolean;
     measurementUnit: "mm" | "in";
     setMeasurementUnit: (unit: "mm" | "in") => void;
   };
@@ -137,6 +141,11 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
             paperSize: paperSizeProps.paperSize,
             setPaperSize: paperSizeProps.setPaperSize,
             paperSizeOptions: paperSizeProps.paperSizeOptions,
+            customWidth: paperSizeProps.customWidth,
+            setCustomWidth: paperSizeProps.setCustomWidth,
+            customHeight: paperSizeProps.customHeight,
+            setCustomHeight: paperSizeProps.setCustomHeight,
+            isCustomSize: paperSizeProps.isCustomSize,
             measurementUnit: paperSizeProps.measurementUnit,
             setMeasurementUnit: paperSizeProps.setMeasurementUnit
           }}
