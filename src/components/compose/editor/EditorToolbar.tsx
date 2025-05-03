@@ -6,8 +6,9 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import FormatButton from './FormatButton';
 import SlateColorPickerPopover from '../SlateColorPickerPopover';
 import PaperStylePopover from '@/components/letter/PaperStylePopover';
-import { PaperSizeOption, LetterStyle } from '@/types/letter';
+import { LetterStyle } from '@/types/letter';
 import { ColorOption } from '@/types/letter';
+import { PaperSizeOption } from '@/hooks/usePaperStyle';
 
 interface EditorToolbarProps {
   isToolbarVisible: boolean;
@@ -32,8 +33,8 @@ interface EditorToolbarProps {
     paperSize: string;
     setPaperSize: (size: string) => void;
     paperSizeOptions: PaperSizeOption[];
-    measurementUnit: string;
-    setMeasurementUnit: (unit: string) => void;
+    measurementUnit: "mm" | "in";
+    setMeasurementUnit: (unit: "mm" | "in") => void;
   };
   stylePopoverOpen: boolean;
   setStylePopoverOpen: (open: boolean) => void;
@@ -133,7 +134,6 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
           letterStyle={letterStyle}
           updateLetterStyle={updateLetterStyle}
           paperSizeProps={{
-            ...paperSizeProps,
             paperSize: paperSizeProps.paperSize,
             setPaperSize: paperSizeProps.setPaperSize,
             paperSizeOptions: paperSizeProps.paperSizeOptions,
