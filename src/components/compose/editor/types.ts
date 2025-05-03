@@ -7,7 +7,9 @@ import { TextAlignment } from '@/types/letter';
 export type CustomElement = {
   type: 'paragraph' | 'page';
   children: (CustomElement | CustomText)[];
-  align?: TextAlignment;
+  align?: TextAlignment | string;
+  pageNumber?: number;
+  pageCount?: number;
 };
 
 export type CustomText = {
@@ -16,8 +18,9 @@ export type CustomText = {
   italic?: boolean;
   underline?: boolean;
   color?: string;
-  font?: string;
-  size?: string;
+  fontFamily?: string;
+  fontSize?: string;
+  lineHeight?: string;
 };
 
 // Custom type declarations for Slate
@@ -39,6 +42,8 @@ export const DEFAULT_INITIAL_VALUE = [
         children: [{ text: '' }],
       },
     ],
+    pageNumber: 1,
+    pageCount: 1,
   },
 ];
 

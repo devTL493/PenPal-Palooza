@@ -11,7 +11,7 @@ interface FormatButtonProps {
 
 const FormatButton = ({ format, icon, isActive = false, onToggle }: FormatButtonProps) => {
   const handleToggle = (e: React.MouseEvent) => {
-    e.preventDefault();
+    e.preventDefault(); // Prevent losing selection
     onToggle(format);
   };
   
@@ -19,7 +19,7 @@ const FormatButton = ({ format, icon, isActive = false, onToggle }: FormatButton
     <Button
       variant={isActive ? 'default' : 'outline'}
       size="sm"
-      onMouseDown={handleToggle}
+      onMouseDown={handleToggle} // Use onMouseDown to prevent losing focus
     >
       {icon}
     </Button>

@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Bold, Italic, Underline, Type, Grip, X } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import FormatButton from './FormatButton';
+import TextStyleControls from './TextStyleControls';
 import SlateColorPickerPopover from '../SlateColorPickerPopover';
 import PaperStylePopover from '@/components/letter/PaperStylePopover';
 import { LetterStyle } from '@/types/letter';
@@ -46,6 +47,17 @@ interface EditorToolbarProps {
   // New props for format handling
   activeFormats: Record<string, boolean>;
   onFormatToggle: (format: string) => void;
+  // New props for text style controls
+  textStyles: {
+    fontFamily: string;
+    fontSize: string;
+    lineSpacing: string;
+    alignment: string;
+  };
+  onFontFamilyChange: (value: string) => void;
+  onFontSizeChange: (value: string) => void;
+  onLineSpacingChange: (value: string) => void;
+  onAlignmentChange: (value: string) => void;
 }
 
 const EditorToolbar: React.FC<EditorToolbarProps> = ({
@@ -71,7 +83,12 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
   stylePopoverOpen,
   setStylePopoverOpen,
   activeFormats,
-  onFormatToggle
+  onFormatToggle,
+  textStyles,
+  onFontFamilyChange,
+  onFontSizeChange,
+  onLineSpacingChange,
+  onAlignmentChange
 }) => {
   if (!isToolbarVisible) return null;
 
@@ -121,7 +138,7 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
           onToggle={onFormatToggle}
         />
         
-        {/* Text style popover */}
+        {/* Text style popover with our new component */}
         <Popover open={stylePopoverOpen} onOpenChange={setStylePopoverOpen}>
           <PopoverTrigger asChild>
             <Button variant="outline" size="sm">
@@ -130,12 +147,18 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-80">
-            <div className="space-y-4">
-              <h3 className="font-medium">Text Styling</h3>
-              
-              {/* Font family, size and alignment options would go here */}
-              {/* For brevity, these are not fully implemented in this example */}
-            </div>
+            <TextStyleControls
+              fontFamily={textStyles.fontFamily}
+              fontSize={textStyles.fontSize}
+              isBold={activeFormats?.bold || false}
+              lineSpacing={textStyles.lineSpacing}
+              alignment={textStyles.alignment}
+              onFontFamilyChange={onFontFamilyChange}
+              onFontSizeChange={onFontSizeChange}
+              onBoldToggle={() => onFormatToggle('bold')}
+              onLineSpacingChange={onLineSpacingChange}
+              onAlignmentChange={onAlignmentChange}
+            />
           </PopoverContent>
         </Popover>
         

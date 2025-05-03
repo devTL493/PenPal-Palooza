@@ -1,7 +1,7 @@
 
-import React, { useState, useMemo, useCallback, useEffect } from 'react';
-import { createEditor, Descendant, Node } from 'slate';
-import { Slate, Editable, withReact } from 'slate-react';
+import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
+import { createEditor, Descendant, Node, Editor, Transforms, Element as SlateElement, Text } from 'slate';
+import { Slate, Editable, withReact, ReactEditor, useSlateStatic } from 'slate-react';
 import { withHistory } from 'slate-history';
 import { TextAlignment, LetterStyle } from '@/types/letter';
 import { usePaperStyle } from '@/hooks/usePaperStyle';
@@ -14,6 +14,7 @@ import Leaf from './editor/Leaf';
 import EditorToolbar from './editor/EditorToolbar';
 import EditorFooter from './editor/EditorFooter';
 import { useEditorState } from './editor/useEditorState';
+import { handlePageBreaks, updatePageNumbers } from './editor/PageBreakHandler';
 
 interface SlateEditorProps {
   content: string;
@@ -81,6 +82,18 @@ const SlateEditor: React.FC<SlateEditorProps> = ({
     underline: false
   });
 
+  // Track text style properties
+  const [textStyles, setTextStyles] = useState({
+    fontFamily: 'serif',
+    fontSize: '16px',
+    lineSpacing: '1.15',
+    alignment: 'left'
+  });
+
+  // For page break calculation
+  const canvasRef = useRef<HTMLDivElement>(null);
+  const [pageHeight, setPageHeight] = useState(0);
+
   // Parse content for Slate
   const [slateValue, setSlateValue] = useState<Descendant[]>(() => {
     try {
@@ -108,13 +121,36 @@ const SlateEditor: React.FC<SlateEditorProps> = ({
   const dimensions = getPaperDimensions();
 
   // Create a Slate editor object that won't change across renders
-  const editor = useMemo(() => withHistory(withReact(createEditor())), []);
+  const editor = useMemo(() => {
+    const e = withHistory(withReact(createEditor()));
+    
+    // Override insertBreak to handle page breaks
+    const { insertBreak } = e;
+    e.insertBreak = () => {
+      insertBreak();
+      
+      // Check for page breaks after inserting a line break
+      setTimeout(() => {
+        handlePageBreaks(e as ReactEditor, pageHeight);
+        updatePageNumbers(e);
+      }, 0);
+    };
+    
+    return e;
+  }, [pageHeight]);
 
   // Define custom element renderer
   const renderElement = useCallback((props: any) => {
     switch (props.element.type) {
       case 'page':
-        return <PageElement {...props} letterStyle={letterStyle} dimensions={dimensions} />;
+        const pageProps = {
+          ...props,
+          letterStyle,
+          dimensions,
+          pageNumber: props.element.pageNumber,
+          pageCount: props.element.pageCount || 1
+        };
+        return <PageElement {...pageProps} />;
       default:
         return <DefaultElement {...props} />;
     }
@@ -124,6 +160,28 @@ const SlateEditor: React.FC<SlateEditorProps> = ({
   const renderLeaf = useCallback((props: any) => {
     return <Leaf {...props} />;
   }, []);
+
+  // Calculate page height once dimensions are available
+  useEffect(() => {
+    if (canvasRef.current && dimensions.height) {
+      // Convert dimensions from string to number
+      let height: number;
+      if (typeof dimensions.height === 'string') {
+        if (dimensions.height.includes('mm')) {
+          height = parseFloat(dimensions.height) * 3.7795275591; // mm to px
+        } else if (dimensions.height.includes('in')) {
+          height = parseFloat(dimensions.height) * 96; // inches to px
+        } else {
+          height = parseFloat(dimensions.height);
+        }
+      } else {
+        height = dimensions.height as number;
+      }
+      
+      // Set page height for calculations
+      setPageHeight(height);
+    }
+  }, [dimensions]);
 
   // Handle value changes
   const handleChange = (newValue: Descendant[]) => {
@@ -144,11 +202,21 @@ const SlateEditor: React.FC<SlateEditorProps> = ({
     const words = text.trim().split(/\s+/).filter(word => word.length > 0);
     setWordCount(words.length);
     
-    // Update page count - simpler implementation
+    // Update page count
     const pageElements = newValue.filter(n => 
       n && typeof n === 'object' && 'type' in n && n.type === 'page'
     );
     setPageCount(Math.max(1, pageElements.length));
+    
+    // Check for page overflows
+    setTimeout(() => {
+      if (editor && ReactEditor.isFocused(editor)) {
+        const changed = handlePageBreaks(editor as ReactEditor, pageHeight);
+        if (changed) {
+          updatePageNumbers(editor);
+        }
+      }
+    }, 100);
   };
 
   // Toolbar visibility
@@ -158,7 +226,32 @@ const SlateEditor: React.FC<SlateEditorProps> = ({
 
   // Start drag operation
   const startDrag = (event: React.PointerEvent) => {
-    // Drag logic would go here
+    // Implement drag logic for detached toolbar
+    const startX = event.clientX;
+    const startY = event.clientY;
+    const startLeft = toolbarPosition.x;
+    const startTop = toolbarPosition.y;
+    
+    const handleMove = (moveEvent: PointerEvent) => {
+      const deltaX = moveEvent.clientX - startX;
+      const deltaY = moveEvent.clientY - startY;
+      
+      const newX = startLeft + deltaX;
+      const newY = startTop + deltaY;
+      
+      setToolbarPosition({
+        x: Math.max(0, newX),
+        y: Math.max(0, newY)
+      });
+    };
+    
+    const handleUp = () => {
+      document.removeEventListener('pointermove', handleMove);
+      document.removeEventListener('pointerup', handleUp);
+    };
+    
+    document.addEventListener('pointermove', handleMove);
+    document.addEventListener('pointerup', handleUp);
   };
 
   // Handle format toggling from the toolbar
@@ -176,19 +269,32 @@ const SlateEditor: React.FC<SlateEditorProps> = ({
     }));
   };
 
-  // Text formatting handlers
-  const handleBold = () => {
-    handleFormatToggle('bold');
+  // Text style handlers
+  const handleFontFamilyChange = (value: string) => {
+    editor.addMark('fontFamily', value);
+    setTextStyles(prev => ({ ...prev, fontFamily: value }));
   };
 
-  const handleItalic = () => {
-    handleFormatToggle('italic');
+  const handleFontSizeChange = (value: string) => {
+    editor.addMark('fontSize', value);
+    setTextStyles(prev => ({ ...prev, fontSize: value }));
   };
 
-  const handleUnderline = () => {
-    handleFormatToggle('underline');
+  const handleLineSpacingChange = (value: string) => {
+    editor.addMark('lineHeight', value);
+    setTextStyles(prev => ({ ...prev, lineSpacing: value }));
   };
 
+  const handleAlignmentChange = (value: string) => {
+    Transforms.setNodes(
+      editor,
+      { align: value },
+      { match: n => SlateElement.isElement(n) && n.type === 'paragraph' }
+    );
+    setTextStyles(prev => ({ ...prev, alignment: value }));
+  };
+
+  // Handle text color
   const handleColorChange = (color: string) => {
     editor.addMark('color', color);
     
@@ -217,17 +323,17 @@ const SlateEditor: React.FC<SlateEditorProps> = ({
     switch (event.key) {
       case 'b': {
         event.preventDefault();
-        handleBold();
+        handleFormatToggle('bold');
         break;
       }
       case 'i': {
         event.preventDefault();
-        handleItalic();
+        handleFormatToggle('italic');
         break;
       }
       case 'u': {
         event.preventDefault();
-        handleUnderline();
+        handleFormatToggle('underline');
         break;
       }
     }
@@ -242,60 +348,99 @@ const SlateEditor: React.FC<SlateEditorProps> = ({
         italic: !!marks.italic,
         underline: !!marks.underline
       });
+      
+      // Also update text styles
+      if (marks.fontFamily) {
+        setTextStyles(prev => ({ ...prev, fontFamily: marks.fontFamily as string }));
+      }
+      if (marks.fontSize) {
+        setTextStyles(prev => ({ ...prev, fontSize: marks.fontSize as string }));
+      }
+      if (marks.lineHeight) {
+        setTextStyles(prev => ({ ...prev, lineSpacing: marks.lineHeight as string }));
+      }
+      
+      // For alignment, we need to look at the current selection's paragraph
+      try {
+        const [match] = Editor.nodes(editor, {
+          match: n => SlateElement.isElement(n) && n.type === 'paragraph',
+        });
+        
+        if (match) {
+          const [node] = match;
+          if ('align' in node) {
+            setTextStyles(prev => ({ ...prev, alignment: node.align as string || 'left' }));
+          }
+        }
+      } catch (err) {
+        console.log('No selection or paragraph found');
+      }
     };
 
-    // We need a way to hook into Slate's selection changes
-    // Since there's no direct way, we'll check periodically
+    // Set up an interval to check for selection changes
     const interval = setInterval(updateActiveFormats, 100);
     return () => clearInterval(interval);
   }, [editor]);
 
+  // Set up CSS variables for page dimensions
+  useEffect(() => {
+    document.documentElement.style.setProperty('--page-width', typeof dimensions.width === 'number' ? `${dimensions.width}px` : dimensions.width);
+    document.documentElement.style.setProperty('--page-height', typeof dimensions.height === 'number' ? `${dimensions.height}px` : dimensions.height);
+    document.documentElement.style.setProperty('--margin', '2cm');
+  }, [dimensions]);
+
   return (
     <div className="flex flex-col items-center" onMouseMove={handleMouseMove}>
-      {/* Editor Toolbar */}
-      <EditorToolbar
-        isToolbarVisible={isToolbarVisible}
-        isToolbarDetached={isToolbarDetached}
-        toolbarPosition={toolbarPosition}
-        toggleToolbarDetached={toggleToolbarDetached}
-        startDrag={startDrag}
-        colorPickerOpen={colorPickerOpen}
-        setColorPickerOpen={setColorPickerOpen}
-        onColorChange={handleColorChange}
-        onRemoveColor={handleRemoveColor}
-        onAddCustomColor={handleAddCustomColor}
-        recentColors={recentColors}
-        colorOptions={colorOptions}
-        paperStylePopoverOpen={paperStylePopoverOpen}
-        setPaperStylePopoverOpen={setPaperStylePopoverOpen}
-        paperStyleOptions={paperStyleOptions}
-        borderStyleOptions={borderStyleOptions}
-        letterStyle={letterStyle}
-        updateLetterStyle={updateLetterStyle}
-        paperSizeProps={paperSizeProps}
-        stylePopoverOpen={stylePopoverOpen}
-        setStylePopoverOpen={setStylePopoverOpen}
-        activeFormats={activeFormats}
-        onFormatToggle={handleFormatToggle}
-      />
-      
-      {/* Canvas with scroll snap */}
-      <div 
-        className="canvas w-full overflow-auto h-[calc(100vh-200px)]"
-        style={{ scrollSnapType: 'y mandatory' }}
+      <Slate
+        editor={editor}
+        value={slateValue}
+        onChange={handleChange}
       >
+        {/* Editor Toolbar */}
+        <EditorToolbar
+          isToolbarVisible={isToolbarVisible}
+          isToolbarDetached={isToolbarDetached}
+          toolbarPosition={toolbarPosition}
+          toggleToolbarDetached={toggleToolbarDetached}
+          startDrag={startDrag}
+          colorPickerOpen={colorPickerOpen}
+          setColorPickerOpen={setColorPickerOpen}
+          onColorChange={handleColorChange}
+          onRemoveColor={handleRemoveColor}
+          onAddCustomColor={handleAddCustomColor}
+          recentColors={recentColors}
+          colorOptions={colorOptions}
+          paperStylePopoverOpen={paperStylePopoverOpen}
+          setPaperStylePopoverOpen={setPaperStylePopoverOpen}
+          paperStyleOptions={paperStyleOptions}
+          borderStyleOptions={borderStyleOptions}
+          letterStyle={letterStyle}
+          updateLetterStyle={updateLetterStyle}
+          paperSizeProps={paperSizeProps}
+          stylePopoverOpen={stylePopoverOpen}
+          setStylePopoverOpen={setStylePopoverOpen}
+          activeFormats={activeFormats}
+          onFormatToggle={handleFormatToggle}
+          textStyles={textStyles}
+          onFontFamilyChange={handleFontFamilyChange}
+          onFontSizeChange={handleFontSizeChange}
+          onLineSpacingChange={handleLineSpacingChange}
+          onAlignmentChange={handleAlignmentChange}
+        />
+        
+        {/* Canvas with scroll snap */}
         <div 
-          className="pages-container"
-          style={{
-            transform: `scale(${zoom/100})`,
-            transformOrigin: 'top center',
-            transition: 'transform 0.2s ease-in-out'
-          }}
+          ref={canvasRef}
+          className="canvas word-processor-canvas w-full overflow-auto h-[calc(100vh-200px)]"
+          style={{ scrollSnapType: 'y mandatory' }}
         >
-          <Slate
-            editor={editor}
-            value={slateValue}
-            onChange={handleChange}
+          <div 
+            className="pages-container"
+            style={{
+              transform: `scale(${zoom/100})`,
+              transformOrigin: 'top center',
+              transition: 'transform 0.2s ease-in-out'
+            }}
           >
             <Editable
               renderElement={renderElement}
@@ -304,17 +449,17 @@ const SlateEditor: React.FC<SlateEditorProps> = ({
               spellCheck
               className="outline-none"
             />
-          </Slate>
+          </div>
         </div>
-      </div>
-      
-      {/* Editor Footer */}
-      <EditorFooter
-        wordCount={wordCount}
-        pageCount={pageCount}
-        zoom={zoom}
-        handleZoomChange={handleZoomChange}
-      />
+        
+        {/* Editor Footer */}
+        <EditorFooter
+          wordCount={wordCount}
+          pageCount={pageCount}
+          zoom={zoom}
+          handleZoomChange={handleZoomChange}
+        />
+      </Slate>
     </div>
   );
 };

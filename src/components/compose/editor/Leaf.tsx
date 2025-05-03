@@ -25,8 +25,41 @@ const Leaf = ({ attributes, children, leaf }: LeafProps) => {
   if (leaf.color) {
     el = <span style={{ color: leaf.color }}>{el}</span>;
   }
+
+  // New styling options
+  const style: React.CSSProperties = {};
+
+  if (leaf.fontFamily) {
+    switch (leaf.fontFamily) {
+      case 'serif':
+        style.fontFamily = 'Georgia, Times New Roman, serif';
+        break;
+      case 'sans':
+        style.fontFamily = 'Arial, Helvetica, sans-serif';
+        break;
+      case 'mono':
+        style.fontFamily = '"Courier Prime", "Courier New", monospace';
+        break;
+      case 'georgia':
+        style.fontFamily = 'Georgia, serif';
+        break;
+      case 'merriweather':
+        style.fontFamily = 'Merriweather, Georgia, serif';
+        break;
+      default:
+        style.fontFamily = leaf.fontFamily;
+    }
+  }
   
-  return <span {...attributes}>{el}</span>;
+  if (leaf.fontSize) {
+    style.fontSize = leaf.fontSize;
+  }
+  
+  if (leaf.lineHeight) {
+    style.lineHeight = leaf.lineHeight;
+  }
+  
+  return <span {...attributes} style={style}>{el}</span>;
 };
 
 export default Leaf;
