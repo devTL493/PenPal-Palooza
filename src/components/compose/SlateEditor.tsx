@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useCallback } from 'react';
 import { createEditor, Descendant, Editor, Transforms, Element as SlateElement, Text, Node } from 'slate';
 import { Slate, Editable, withReact, ReactEditor, useSlate } from 'slate-react';
@@ -29,9 +30,10 @@ type CustomText = {
   size?: string;
 };
 
+// Extend Slate's TypeScript definitions
 declare module 'slate' {
   interface CustomTypes {
-    Editor: BaseEditor & ReactEditor;
+    Editor: Editor & ReactEditor;
     Element: CustomElement;
     Text: CustomText;
   }
