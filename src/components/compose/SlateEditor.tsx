@@ -39,7 +39,8 @@ declare module 'slate' {
   }
 }
 
-type BaseEditor = Editor;
+// Define BaseEditor separately without circular reference
+type BaseEditor = Omit<Editor, 'children'>;
 
 const DEFAULT_INITIAL_VALUE: Descendant[] = [
   {
