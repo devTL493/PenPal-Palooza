@@ -118,7 +118,6 @@ const EnhancedPaperEditor: React.FC<EnhancedPaperEditorProps> = ({
     { value: 'text-xl', label: 'X-Large' },
   ];
   
-  // Load recent colors from localStorage
   useEffect(() => {
     const saved = localStorage.getItem('recentTextColors');
     if (saved) {
@@ -170,7 +169,6 @@ const EnhancedPaperEditor: React.FC<EnhancedPaperEditorProps> = ({
     { value: 'border-ornate', label: 'Ornate', description: 'Decorative ornamental border' }
   ];
   
-  // Save selection on mouseup/keyup
   useEffect(() => {
     const handleSelectionChange = () => {
       const selection = window.getSelection();
@@ -194,7 +192,6 @@ const EnhancedPaperEditor: React.FC<EnhancedPaperEditorProps> = ({
     e.preventDefault();
   };
   
-  // Restore selection before applying formatting
   const handleApplyFormattingWithSelection = (formatType: string, value: any) => {
     // Restore selection if available
     if (lastSelection) {
@@ -245,8 +242,14 @@ const EnhancedPaperEditor: React.FC<EnhancedPaperEditorProps> = ({
       setToolbarPosition({ x: 0, y: 0 });
     }
   };
+
+  // Create a wrapper for insertLink that matches the expected signature
+  const handleInsertLink = () => {
+    if (linkUrl) {
+      insertLink(linkUrl);
+    }
+  };
   
-  // Set up contentEditable
   useEffect(() => {
     if (editorRef.current) {
       editorRef.current.setAttribute('contenteditable', 'true');
@@ -269,7 +272,6 @@ const EnhancedPaperEditor: React.FC<EnhancedPaperEditorProps> = ({
     updatePageCount();
   };
   
-  // Calculate page count based on content height
   const updatePageCount = useCallback(() => {
     if (!editorRef.current || !paperRef.current) return;
     
@@ -311,7 +313,6 @@ const EnhancedPaperEditor: React.FC<EnhancedPaperEditorProps> = ({
     }
   }, [handleScroll]);
   
-  // Keyboard shortcuts for formatting
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       // Check if Ctrl/Command key is pressed
@@ -449,7 +450,7 @@ const EnhancedPaperEditor: React.FC<EnhancedPaperEditorProps> = ({
                 setLinkUrl={setLinkUrl}
                 linkText={linkText}
                 setLinkText={setLinkText}
-                onInsertLink={insertLink}
+                onInsertLink={handleInsertLink}
               />
               
               {/* Ruler toggle button */}

@@ -23,6 +23,7 @@ const ComposeEditor: React.FC<ComposeEditorProps> = ({
   handleSend
 }) => {
   const textareaRef = React.useRef<HTMLTextAreaElement>(null);
+  const editorRef = React.useRef<HTMLDivElement>(null);
   const [activeQuoteId, setActiveQuoteId] = React.useState<string | null>(null);
   
   // Use custom hooks
@@ -51,7 +52,7 @@ const ComposeEditor: React.FC<ComposeEditorProps> = ({
     selectionRange, 
     activeTextFormat, 
   } = useTextSelection({ 
-    textareaRef, 
+    editorRef, 
     content, 
     inlineStyles, 
     documentStyle 
@@ -72,7 +73,7 @@ const ComposeEditor: React.FC<ComposeEditorProps> = ({
 
   // Function to apply formatting with correct parameters
   const handleApplyFormatting = (formatType: string, value: any) => {
-    applyFormatting(formatType, value, selectionRange, activeTextFormat);
+    applyFormatting(formatType, value);
     
     // Close style popovers after applying
     setStylePopoverOpen(false);
@@ -86,7 +87,7 @@ const ComposeEditor: React.FC<ComposeEditorProps> = ({
 
   // Function to handle inserting links
   const handleInsertLink = () => {
-    insertLink(selectionRange, linkUrl);
+    insertLink(linkUrl);
     
     // Return focus to textarea
     if (textareaRef.current) {

@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
-import { Palette, Check, Plus, Eyedropper, X } from "lucide-react";
+import { Palette, Check, Plus, X } from "lucide-react";
 
 interface ColorPickerPopoverProps {
   colorPickerOpen: boolean;
@@ -203,16 +203,16 @@ const ColorPickerPopover: React.FC<ColorPickerPopoverProps> = ({
                   />
                 </label>
                 
-                {/* Eyedropper button */}
+                {/* Color picker button (replacing Eyedropper) */}
                 {'EyeDropper' in window && (
                   <button 
                     className="w-8 h-8 rounded border flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-800"
                     onClick={handleEyedropper}
                     title="Pick Color from Screen"
-                    aria-label="Pick color from screen with eyedropper tool"
+                    aria-label="Pick color from screen"
                     type="button"
                   >
-                    <Eyedropper className="h-4 w-4" />
+                    <Palette className="h-4 w-4" />
                   </button>
                 )}
                 
