@@ -1,6 +1,6 @@
 
 import React, { useState, useMemo, useCallback } from 'react';
-import { createEditor, Descendant, Editor, Transforms, Element as SlateElement, Text, Node } from 'slate';
+import { createEditor, Descendant, Editor, Transforms, Text, Node } from 'slate';
 import { Slate, Editable, withReact, ReactEditor, useSlate } from 'slate-react';
 import { withHistory } from 'slate-history';
 import { Button } from "@/components/ui/button";
@@ -33,14 +33,11 @@ type CustomText = {
 // Extend Slate's TypeScript definitions
 declare module 'slate' {
   interface CustomTypes {
-    Editor: BaseEditor & ReactEditor;
+    Editor: Editor & ReactEditor;
     Element: CustomElement;
     Text: CustomText;
   }
 }
-
-// For type safety
-type BaseEditor = Editor;
 
 const DEFAULT_INITIAL_VALUE: Descendant[] = [
   {
@@ -166,15 +163,11 @@ const SlateEditor: React.FC<SlateEditorProps> = ({
     const words = text.trim().split(/\s+/).filter(word => word.length > 0);
     setWordCount(words.length);
     
-    // Update page count
-    calculatePageCount(newValue);
-  };
-
-  // Calculate number of pages
-  const calculatePageCount = (value: Descendant[]) => {
-    // Count page blocks
-    const pages = value.filter(node => SlateElement.isElement(node) && node.type === 'page');
-    setPageCount(Math.max(1, pages.length));
+    // Update page count - simpler implementation
+    const pageElements = newValue.filter(n => 
+      n && typeof n === 'object' && 'type' in n && n.type === 'page'
+    );
+    setPageCount(Math.max(1, pageElements.length));
   };
 
   // Toolbar visibility
@@ -431,7 +424,7 @@ const FormatButton = ({ format, icon }: { format: string, icon: React.ReactNode 
   
   const toggleFormat = (e: React.MouseEvent) => {
     e.preventDefault();
-    const isActive = !!Editor.marks(editor)?.[format];
+    const isActive = !!Editor.marks(editor)?.[format as keyof typeof Editor.marks(editor)];
     
     if (isActive) {
       Editor.removeMark(editor, format);
