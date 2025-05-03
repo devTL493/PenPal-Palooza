@@ -1,6 +1,6 @@
 
 import React, { useState, useMemo, useCallback } from 'react';
-import { createEditor, Descendant, Node, Text } from 'slate';
+import { createEditor, Descendant, Node, Text, Element as SlateElement, Editor } from 'slate';
 import { Slate, Editable, withReact, ReactEditor, useSlate } from 'slate-react';
 import { withHistory } from 'slate-history';
 import { Button } from "@/components/ui/button";
@@ -30,7 +30,7 @@ type CustomText = {
   size?: string;
 };
 
-// Extend Slate's TypeScript definitions
+// Custom type declarations for Slate
 declare module 'slate' {
   interface CustomTypes {
     Editor: BaseEditor & ReactEditor;
@@ -39,9 +39,10 @@ declare module 'slate' {
   }
 }
 
-// Define BaseEditor type without circular reference
-type BaseEditor = Omit<import('slate').Editor, 'children'>;
+// Define BaseEditor type to avoid circular reference
+type BaseEditor = import('slate').Editor;
 
+// Create safe initial value that conforms to our types
 const DEFAULT_INITIAL_VALUE: Descendant[] = [
   {
     type: 'page',
@@ -49,8 +50,8 @@ const DEFAULT_INITIAL_VALUE: Descendant[] = [
       {
         type: 'paragraph',
         children: [{ text: '' }],
-      },
-    ],
+      } as CustomElement,
+    ] as CustomElement[],
   } as CustomElement,
 ];
 
@@ -192,19 +193,19 @@ const SlateEditor: React.FC<SlateEditorProps> = ({
 
   // Text formatting handlers
   const handleBold = () => {
-    Editor.addMark(editor, 'bold', true);
+    editor.addMark('bold', true);
   };
 
   const handleItalic = () => {
-    Editor.addMark(editor, 'italic', true);
+    editor.addMark('italic', true);
   };
 
   const handleUnderline = () => {
-    Editor.addMark(editor, 'underline', true);
+    editor.addMark('underline', true);
   };
 
   const handleColorChange = (color: string) => {
-    Editor.addMark(editor, 'color', color);
+    editor.addMark('color', color);
     
     // Add to recent colors
     const updatedColors = [
@@ -217,7 +218,7 @@ const SlateEditor: React.FC<SlateEditorProps> = ({
   };
 
   const handleRemoveColor = () => {
-    Editor.removeMark(editor, 'color');
+    editor.removeMark('color');
   };
 
   const handleAddCustomColor = (color: string) => {
@@ -422,17 +423,20 @@ const FormatButton = ({ format, icon }: { format: string, icon: React.ReactNode 
   
   const isActive = () => {
     const marks = Editor.marks(editor);
+    // Use type assertion to safely check if the format exists in marks
     return marks ? marks[format as keyof typeof marks] === true : false;
   };
   
   const toggleFormat = (e: React.MouseEvent) => {
     e.preventDefault();
-    const isActive = !!Editor.marks(editor)?.[format as keyof object];
     
-    if (isActive) {
-      Editor.removeMark(editor, format);
+    const marks = Editor.marks(editor);
+    const isFormatActive = marks ? Boolean(marks[format as keyof typeof marks]) : false;
+    
+    if (isFormatActive) {
+      editor.removeMark(format);
     } else {
-      Editor.addMark(editor, format, true);
+      editor.addMark(format, true);
     }
   };
   
