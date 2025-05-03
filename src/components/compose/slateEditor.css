@@ -1,0 +1,89 @@
+
+/* Slate Editor Styles */
+.canvas {
+  height: 100vh;
+  overflow-y: auto;
+  scroll-snap-type: y mandatory;
+}
+
+.page {
+  position: relative;
+  box-sizing: border-box;
+  width: 210mm;
+  padding: 2cm;
+  margin: 2rem auto;
+  background: #ffffff;
+  box-shadow: 0 0 8px rgba(0,0,0,0.1);
+  overflow: visible;
+  cursor: text;
+  scroll-snap-align: start;
+}
+
+/* Color picker styles */
+.color-picker {
+  display: flex;
+  flex-direction: column;
+  padding: 0.5rem;
+  background: #ffffff;
+  border: 1px solid #dddddd;
+  border-radius: 0.25rem;
+}
+
+.color-picker .grid {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 4px;
+  margin: 0.5rem 0;
+}
+
+.color-picker .swatch {
+  width: 24px;
+  height: 24px;
+  border: 1px solid #cccccc;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.color-picker .swatch:hover {
+  border-color: #888888;
+}
+
+.color-picker .section-label {
+  font-size: 0.75rem;
+  color: #666666;
+  margin-top: 0.5rem;
+}
+
+/* Textures and paper styles */
+.texture {
+  background-color: #fff;
+  background-image: linear-gradient(90deg, rgba(0,0,0,0.01) 1px, transparent 1px),
+                    linear-gradient(rgba(0,0,0,0.01) 1px, transparent 1px);
+  background-size: 10px 10px;
+}
+
+.shadow-paper {
+  box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
+}
+
+/* Paragraph styling */
+[data-slate-editor] > div > p {
+  margin-bottom: 1em;
+  line-height: 1.6;
+}
+
+/* Focus styles */
+[data-slate-editor]:focus {
+  outline: none;
+}
+
+/* Page footer */
+.page-footer {
+  position: absolute;
+  bottom: 0.5cm;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-size: 0.75rem;
+  color: #888;
+}

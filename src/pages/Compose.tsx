@@ -12,7 +12,7 @@ import ConversationHistory from '@/components/letter/ConversationHistory';
 import ComposeHeader from '@/components/compose/ComposeHeader';
 import ComposeMobileLayout from '@/components/compose/ComposeMobileLayout';
 import { useComposeView } from '@/hooks/useComposeView';
-import EnhancedPaperEditor from '@/components/compose/EnhancedPaperEditor';
+import ComposeEditor from '@/components/compose/ComposeEditor';
 
 const Compose = () => {
   const [searchParams] = useSearchParams();
@@ -54,10 +54,12 @@ const Compose = () => {
   const renderComposerPanel = () => (
     <div className="h-full overflow-visible flex flex-col">
       <div className="flex-1 overflow-visible">
-        <EnhancedPaperEditor 
+        <ComposeEditor 
           content={content}
           setContent={setContent}
-          onSend={handleSend}
+          subject={subject}
+          recipient={recipient}
+          handleSend={handleSend}
         />
       </div>
     </div>
@@ -87,13 +89,6 @@ const Compose = () => {
       />
     </div>
   );
-
-  // Debug output to help troubleshoot
-  console.log('Conversation length:', conversation?.length);
-  console.log('isWideScreen:', isWideScreen);
-  console.log('shouldShowConversation:', shouldShowConversation);
-  console.log('viewMode:', viewMode);
-  console.log('isPanelReversed:', isPanelReversed);
 
   return (
     <div className="min-h-screen bg-background">

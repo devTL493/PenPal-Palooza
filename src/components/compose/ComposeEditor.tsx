@@ -1,10 +1,9 @@
 
 import React from 'react';
 import ChatMessageInput from '@/components/letter/ChatMessageInput';
-import useTextSelection from '@/hooks/useTextSelection';
 import useLetterSave from '@/hooks/useLetterSave';
 import { useLetterFormatting } from '@/hooks/useLetterFormatting';
-import LetterEditor from './LetterEditor';
+import SlateEditor from './SlateEditor';
 import { fontOptions, fontSizeOptions, colorOptions, paperStyleOptions, borderStyleOptions } from '@/data/editorOptions';
 
 interface ComposeEditorProps {
@@ -49,16 +48,6 @@ const ComposeEditor: React.FC<ComposeEditorProps> = ({
   } = letterFormatting;
 
   const { 
-    selectionRange, 
-    activeTextFormat, 
-  } = useTextSelection({ 
-    editorRef, 
-    content, 
-    inlineStyles, 
-    documentStyle 
-  });
-
-  const { 
     isSaving, 
     lastSaved, 
     handleAutoSave, 
@@ -79,9 +68,8 @@ const ComposeEditor: React.FC<ComposeEditorProps> = ({
     setStylePopoverOpen(false);
     
     // Update the textarea to maintain focus
-    if (textareaRef.current && selectionRange) {
+    if (textareaRef.current) {
       textareaRef.current.focus();
-      textareaRef.current.setSelectionRange(selectionRange.start, selectionRange.end);
     }
   };
 
@@ -102,34 +90,20 @@ const ComposeEditor: React.FC<ComposeEditorProps> = ({
 
   return (
     <>
-      <LetterEditor 
+      <SlateEditor 
         content={content}
         setContent={setContent}
-        textareaRef={textareaRef}
         documentStyle={documentStyle}
-        inlineStyles={inlineStyles}
         letterStyle={letterStyle}
-        paperStylePopoverOpen={paperStylePopoverOpen}
-        setPaperStylePopoverOpen={setPaperStylePopoverOpen}
+        updateLetterStyle={updateLetterStyle}
         paperStyleOptions={paperStyleOptions}
         borderStyleOptions={borderStyleOptions}
-        updateLetterStyle={updateLetterStyle}
-        linkPopoverOpen={linkPopoverOpen}
-        setLinkPopoverOpen={setLinkPopoverOpen}
-        selectionRange={selectionRange}
-        linkUrl={linkUrl}
-        setLinkUrl={setLinkUrl}
-        linkText={linkText}
-        setLinkText={setLinkText}
-        insertLink={handleInsertLink}
-        scrollToQuoteInConversation={scrollToQuoteInConversation}
-        stylePopoverOpen={stylePopoverOpen}
-        setStylePopoverOpen={setStylePopoverOpen}
-        activeTextFormat={activeTextFormat}
         fontOptions={fontOptions}
         fontSizeOptions={fontSizeOptions}
         colorOptions={colorOptions}
         applyFormatting={handleApplyFormatting}
+        insertLink={handleInsertLink}
+        handleAutoSave={handleAutoSave}
       />
       
       {/* Message input actions */}
@@ -137,8 +111,16 @@ const ComposeEditor: React.FC<ComposeEditorProps> = ({
         content={content}
         setContent={setContent}
         textareaRef={textareaRef}
-        selectionRange={selectionRange}
-        activeTextFormat={activeTextFormat}
+        selectionRange={null}
+        activeTextFormat={{
+          isBold: false,
+          isItalic: false,
+          isUnderline: false,
+          font: documentStyle.font,
+          size: documentStyle.size,
+          color: documentStyle.color,
+          alignment: documentStyle.alignment
+        }}
         fontOptions={fontOptions}
         fontSizeOptions={fontSizeOptions}
         colorOptions={colorOptions}
