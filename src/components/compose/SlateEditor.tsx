@@ -1,6 +1,6 @@
 
 import React, { useState, useMemo, useCallback } from 'react';
-import { createEditor, Descendant, Node, Text, Element as SlateElement, Editor } from 'slate';
+import { createEditor, Descendant, Node, Text, Element as SlateElement, BaseEditor } from 'slate';
 import { Slate, Editable, withReact, ReactEditor, useSlate } from 'slate-react';
 import { withHistory } from 'slate-history';
 import { Button } from "@/components/ui/button";
@@ -16,7 +16,7 @@ import './slateEditor.css';
 // Define custom element types
 type CustomElement = {
   type: 'paragraph' | 'page';
-  children: CustomText[];
+  children: (CustomElement | CustomText)[];
   align?: TextAlignment;
 };
 
@@ -39,9 +39,6 @@ declare module 'slate' {
   }
 }
 
-// Define BaseEditor type to avoid circular reference
-type BaseEditor = import('slate').Editor;
-
 // Create safe initial value that conforms to our types
 const DEFAULT_INITIAL_VALUE: Descendant[] = [
   {
@@ -50,9 +47,9 @@ const DEFAULT_INITIAL_VALUE: Descendant[] = [
       {
         type: 'paragraph',
         children: [{ text: '' }],
-      } as CustomElement,
-    ] as CustomElement[],
-  } as CustomElement,
+      },
+    ],
+  },
 ];
 
 const PAGE_HEIGHT = 1100; // Approximately A4 height in pixels
@@ -422,18 +419,15 @@ const FormatButton = ({ format, icon }: { format: string, icon: React.ReactNode 
   const editor = useSlate();
   
   const isActive = () => {
-    const marks = Editor.marks(editor);
-    // Use type assertion to safely check if the format exists in marks
-    return marks ? marks[format as keyof typeof marks] === true : false;
+    // Safely check the editor marks
+    const marks = editor.marks;
+    return marks ? Boolean(marks[format as keyof typeof marks]) : false;
   };
   
   const toggleFormat = (e: React.MouseEvent) => {
     e.preventDefault();
     
-    const marks = Editor.marks(editor);
-    const isFormatActive = marks ? Boolean(marks[format as keyof typeof marks]) : false;
-    
-    if (isFormatActive) {
+    if (isActive()) {
       editor.removeMark(format);
     } else {
       editor.addMark(format, true);
