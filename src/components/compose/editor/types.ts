@@ -1,18 +1,26 @@
 
-import { BaseEditor } from 'slate';
+import { BaseEditor, Descendant } from 'slate';
 import { ReactEditor } from 'slate-react';
-import { TextAlignment } from '@/types/letter';
+import { HistoryEditor } from 'slate-history';
 
-// Define custom element types
-export type CustomElement = {
-  type: 'paragraph' | 'page';
-  children: (CustomElement | CustomText)[];
-  align?: TextAlignment | string;
-  pageNumber?: number;
-  pageCount?: number;
+export type CustomEditor = BaseEditor & ReactEditor & HistoryEditor;
+
+export type ParagraphElement = {
+  type: 'paragraph';
+  align?: 'left' | 'center' | 'right' | 'justify';
+  children: CustomText[];
 };
 
-export type CustomText = {
+export type PageElement = {
+  type: 'page';
+  pageNumber?: number;
+  pageCount?: number;
+  children: ParagraphElement[];
+};
+
+export type CustomElement = ParagraphElement | PageElement;
+
+export type FormattedText = {
   text: string;
   bold?: boolean;
   italic?: boolean;
@@ -23,28 +31,33 @@ export type CustomText = {
   lineHeight?: string;
 };
 
-// Custom type declarations for Slate
+export type CustomText = FormattedText;
+
+export type Position = {
+  x: number;
+  y: number;
+};
+
+export const DEFAULT_INITIAL_VALUE: Descendant[] = [
+  {
+    type: 'page',
+    pageNumber: 1,
+    pageCount: 1,
+    children: [
+      {
+        type: 'paragraph',
+        children: [
+          { text: '' }
+        ]
+      }
+    ]
+  }
+];
+
 declare module 'slate' {
   interface CustomTypes {
-    Editor: BaseEditor & ReactEditor;
+    Editor: CustomEditor;
     Element: CustomElement;
     Text: CustomText;
   }
 }
-
-// Create safe initial value that conforms to our types
-export const DEFAULT_INITIAL_VALUE = [
-  {
-    type: 'page',
-    children: [
-      {
-        type: 'paragraph',
-        children: [{ text: '' }],
-      },
-    ],
-    pageNumber: 1,
-    pageCount: 1,
-  },
-];
-
-export const PAGE_HEIGHT = 1100; // Approximately A4 height in pixels

@@ -58,7 +58,7 @@ const SlateEditor: React.FC<SlateEditorProps> = ({
     setIsToolbarVisible,
     isToolbarDetached,
     toolbarPosition,
-    setToolbarPosition,  // Add this import from useEditorState
+    setToolbarPosition,
     colorPickerOpen,
     setColorPickerOpen,
     paperStylePopoverOpen,

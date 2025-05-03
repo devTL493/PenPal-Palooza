@@ -32,6 +32,9 @@ const SlateColorPickerPopover: React.FC<SlateColorPickerPopoverProps> = ({
     reds: ['#7F0000', '#9A0000', '#B71C1C', '#D32F2F', '#F44336', '#E57373', '#FFCDD2', '#FFEBEE'],
     blues: ['#0D47A1', '#1976D2', '#2196F3', '#42A5F5', '#64B5F6', '#90CAF9', '#BBDEFB', '#E3F2FD'],
     greens: ['#1B5E20', '#388E3C', '#4CAF50', '#66BB6A', '#81C784', '#A5D6A7', '#C8E6C9', '#E8F5E9'],
+    oranges: ['#E65100', '#F57C00', '#FF9800', '#FFB74D', '#FFCC80', '#FFE0B2', '#FFF3E0', '#FFF8E1'],
+    yellows: ['#F57F17', '#FBC02D', '#FFEB3B', '#FFF176', '#FFF59D', '#FFF9C4', '#FFFDE7', '#FFFDE7'],
+    purples: ['#4A148C', '#7B1FA2', '#9C27B0', '#AB47BC', '#BA68C8', '#CE93D8', '#E1BEE7', '#F3E5F5'],
   };
   
   // Flatten color palette for the grid 
@@ -47,6 +50,37 @@ const SlateColorPickerPopover: React.FC<SlateColorPickerPopoverProps> = ({
     onAddCustomColor(customColor);
     setColorPickerOpen(false);
   };
+
+  // Handle eyedropper if supported by the browser
+  const handleEyedropper = async () => {
+    if ('EyeDropper' in window) {
+      try {
+        // @ts-ignore: EyeDropper API might not be recognized by TypeScript
+        const eyeDropper = new (window as any).EyeDropper();
+        const result = await eyeDropper.open();
+        if (result.sRGBHex) {
+          setCustomColor(result.sRGBHex);
+        }
+      } catch (e) {
+        console.error('Error using eyedropper:', e);
+      }
+    }
+  };
+
+  // Fallback JS for non-Popover setups
+  useEffect(() => {
+    const input = document.getElementById('color-picker-input');
+    if (!input) return;
+    const pickerWidth = 300; // estimate native picker width
+    
+    const onFocus = () => {
+      const { right } = input.getBoundingClientRect();
+      input.style.direction = (right + pickerWidth > window.innerWidth) ? 'rtl' : 'ltr';
+    };
+    
+    input.addEventListener('focus', onFocus);
+    return () => input.removeEventListener('focus', onFocus);
+  }, []);
 
   return (
     <Popover open={colorPickerOpen} onOpenChange={setColorPickerOpen}>
@@ -155,6 +189,19 @@ const SlateColorPickerPopover: React.FC<SlateColorPickerPopoverProps> = ({
                   className="!p-0 !overflow-visible"
                 />
               </Popover>
+              
+              {/* Eyedropper button if supported */}
+              {'EyeDropper' in window && (
+                <button 
+                  className="w-8 h-8 rounded border flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-800"
+                  onClick={handleEyedropper}
+                  title="Pick Color from Screen"
+                  aria-label="Pick color from screen"
+                  type="button"
+                >
+                  <Palette className="h-4 w-4" />
+                </button>
+              )}
               
               {/* Color input display */}
               <div className="flex items-center gap-2">
