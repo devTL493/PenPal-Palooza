@@ -1,5 +1,5 @@
 
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { createEditor, Descendant, Node } from 'slate';
 import { Slate, Editable, withReact } from 'slate-react';
 import { withHistory } from 'slate-history';
@@ -73,6 +73,13 @@ const SlateEditor: React.FC<SlateEditorProps> = ({
     toggleToolbarDetached,
     handleZoomChange
   } = useEditorState();
+
+  // Track active formatting
+  const [activeFormats, setActiveFormats] = useState<Record<string, boolean>>({
+    bold: false,
+    italic: false,
+    underline: false
+  });
 
   // Parse content for Slate
   const [slateValue, setSlateValue] = useState<Descendant[]>(() => {
@@ -154,17 +161,32 @@ const SlateEditor: React.FC<SlateEditorProps> = ({
     // Drag logic would go here
   };
 
+  // Handle format toggling from the toolbar
+  const handleFormatToggle = (format: string) => {
+    if (activeFormats[format]) {
+      editor.removeMark(format);
+    } else {
+      editor.addMark(format, true);
+    }
+    
+    // Update the active formats state
+    setActiveFormats(prev => ({
+      ...prev,
+      [format]: !prev[format]
+    }));
+  };
+
   // Text formatting handlers
   const handleBold = () => {
-    editor.addMark('bold', true);
+    handleFormatToggle('bold');
   };
 
   const handleItalic = () => {
-    editor.addMark('italic', true);
+    handleFormatToggle('italic');
   };
 
   const handleUnderline = () => {
-    editor.addMark('underline', true);
+    handleFormatToggle('underline');
   };
 
   const handleColorChange = (color: string) => {
@@ -211,6 +233,23 @@ const SlateEditor: React.FC<SlateEditorProps> = ({
     }
   };
 
+  // Update active formats when selection changes
+  useEffect(() => {
+    const updateActiveFormats = () => {
+      const marks = editor.marks || {};
+      setActiveFormats({
+        bold: !!marks.bold,
+        italic: !!marks.italic,
+        underline: !!marks.underline
+      });
+    };
+
+    // We need a way to hook into Slate's selection changes
+    // Since there's no direct way, we'll check periodically
+    const interval = setInterval(updateActiveFormats, 100);
+    return () => clearInterval(interval);
+  }, [editor]);
+
   return (
     <div className="flex flex-col items-center" onMouseMove={handleMouseMove}>
       {/* Editor Toolbar */}
@@ -236,6 +275,8 @@ const SlateEditor: React.FC<SlateEditorProps> = ({
         paperSizeProps={paperSizeProps}
         stylePopoverOpen={stylePopoverOpen}
         setStylePopoverOpen={setStylePopoverOpen}
+        activeFormats={activeFormats}
+        onFormatToggle={handleFormatToggle}
       />
       
       {/* Canvas with scroll snap */}

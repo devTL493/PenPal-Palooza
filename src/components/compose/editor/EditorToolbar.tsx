@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Bold, Italic, Underline, Type, Grip, X } from 'lucide-react';
@@ -42,6 +43,9 @@ interface EditorToolbarProps {
   };
   stylePopoverOpen: boolean;
   setStylePopoverOpen: (open: boolean) => void;
+  // New props for format handling
+  activeFormats: Record<string, boolean>;
+  onFormatToggle: (format: string) => void;
 }
 
 const EditorToolbar: React.FC<EditorToolbarProps> = ({
@@ -65,7 +69,9 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
   updateLetterStyle,
   paperSizeProps,
   stylePopoverOpen,
-  setStylePopoverOpen
+  setStylePopoverOpen,
+  activeFormats,
+  onFormatToggle
 }) => {
   if (!isToolbarVisible) return null;
 
@@ -95,10 +101,25 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
           {isToolbarDetached ? "Attach" : "Detach"}
         </button>
         
-        {/* Text formatting controls */}
-        <FormatButton format="bold" icon={<Bold className="h-4 w-4" />} />
-        <FormatButton format="italic" icon={<Italic className="h-4 w-4" />} />
-        <FormatButton format="underline" icon={<Underline className="h-4 w-4" />} />
+        {/* Text formatting controls with updated FormatButton */}
+        <FormatButton 
+          format="bold" 
+          icon={<Bold className="h-4 w-4" />} 
+          isActive={activeFormats?.bold || false} 
+          onToggle={onFormatToggle}
+        />
+        <FormatButton 
+          format="italic" 
+          icon={<Italic className="h-4 w-4" />} 
+          isActive={activeFormats?.italic || false} 
+          onToggle={onFormatToggle}
+        />
+        <FormatButton 
+          format="underline" 
+          icon={<Underline className="h-4 w-4" />} 
+          isActive={activeFormats?.underline || false} 
+          onToggle={onFormatToggle}
+        />
         
         {/* Text style popover */}
         <Popover open={stylePopoverOpen} onOpenChange={setStylePopoverOpen}>

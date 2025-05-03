@@ -1,37 +1,25 @@
 
 import React from 'react';
-import { useSlate } from 'slate-react';
 import { Button } from "@/components/ui/button";
 
 interface FormatButtonProps {
   format: string;
   icon: React.ReactNode;
+  isActive?: boolean;
+  onToggle: (format: string) => void;
 }
 
-const FormatButton = ({ format, icon }: FormatButtonProps) => {
-  const editor = useSlate();
-  
-  const isActive = () => {
-    // Safely check the editor marks
-    const marks = editor.marks;
-    return marks ? Boolean(marks[format as keyof typeof marks]) : false;
-  };
-  
-  const toggleFormat = (e: React.MouseEvent) => {
+const FormatButton = ({ format, icon, isActive = false, onToggle }: FormatButtonProps) => {
+  const handleToggle = (e: React.MouseEvent) => {
     e.preventDefault();
-    
-    if (isActive()) {
-      editor.removeMark(format);
-    } else {
-      editor.addMark(format, true);
-    }
+    onToggle(format);
   };
   
   return (
     <Button
-      variant={isActive() ? 'default' : 'outline'}
+      variant={isActive ? 'default' : 'outline'}
       size="sm"
-      onMouseDown={toggleFormat}
+      onMouseDown={handleToggle}
     >
       {icon}
     </Button>
