@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useCallback } from 'react';
 import { createEditor, Descendant, Editor, Transforms, Text, Node } from 'slate';
 import { Slate, Editable, withReact, ReactEditor, useSlate } from 'slate-react';
@@ -32,11 +33,13 @@ type CustomText = {
 // Extend Slate's TypeScript definitions
 declare module 'slate' {
   interface CustomTypes {
-    Editor: Editor & ReactEditor;
+    Editor: BaseEditor & ReactEditor;
     Element: CustomElement;
     Text: CustomText;
   }
 }
+
+type BaseEditor = Editor;
 
 const DEFAULT_INITIAL_VALUE: Descendant[] = [
   {
