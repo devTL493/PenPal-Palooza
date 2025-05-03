@@ -33,11 +33,14 @@ type CustomText = {
 // Extend Slate's TypeScript definitions
 declare module 'slate' {
   interface CustomTypes {
-    Editor: Editor & ReactEditor;
+    Editor: BaseEditor & ReactEditor;
     Element: CustomElement;
     Text: CustomText;
   }
 }
+
+// For type safety
+type BaseEditor = Editor;
 
 const DEFAULT_INITIAL_VALUE: Descendant[] = [
   {

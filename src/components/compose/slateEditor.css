@@ -48,12 +48,6 @@
   border-color: #888888;
 }
 
-.color-picker .section-label {
-  font-size: 0.75rem;
-  color: #666666;
-  margin-top: 0.5rem;
-}
-
 /* Textures and paper styles */
 .texture {
   background-color: #fff;
