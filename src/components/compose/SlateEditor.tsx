@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useCallback } from 'react';
 import { createEditor, Descendant, Editor, Transforms, Text, Node } from 'slate';
 import { Slate, Editable, withReact, ReactEditor, useSlate } from 'slate-react';
@@ -424,7 +423,7 @@ const FormatButton = ({ format, icon }: { format: string, icon: React.ReactNode 
   
   const toggleFormat = (e: React.MouseEvent) => {
     e.preventDefault();
-    const isActive = !!Editor.marks(editor)?.[format as keyof typeof Editor.marks(editor)];
+    const isActive = !!Editor.marks(editor)?.[format as keyof object];
     
     if (isActive) {
       Editor.removeMark(editor, format);
