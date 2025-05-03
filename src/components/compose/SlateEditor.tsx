@@ -1,58 +1,19 @@
 
 import React, { useState, useMemo, useCallback } from 'react';
-import { createEditor, Descendant, Node, Text, Element as SlateElement, BaseEditor } from 'slate';
-import { Slate, Editable, withReact, ReactEditor, useSlate } from 'slate-react';
+import { createEditor, Descendant, Node } from 'slate';
+import { Slate, Editable, withReact } from 'slate-react';
 import { withHistory } from 'slate-history';
-import { Button } from "@/components/ui/button";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Bold, Italic, Underline, Type, AlignLeft, AlignCenter, AlignRight, Palette, Grip, X, Plus } from 'lucide-react';
 import { TextAlignment, LetterStyle } from '@/types/letter';
-import { FontOption, FontSizeOption, ColorOption, PaperStyleOption, BorderStyleOption } from '@/types/letter';
-import PaperStylePopover from '@/components/letter/PaperStylePopover';
-import { usePaperStyle, PaperSizeOption } from '@/hooks/usePaperStyle';
-import SlateColorPickerPopover from './SlateColorPickerPopover';
+import { usePaperStyle } from '@/hooks/usePaperStyle';
 import './slateEditor.css';
 
-// Define custom element types
-type CustomElement = {
-  type: 'paragraph' | 'page';
-  children: (CustomElement | CustomText)[];
-  align?: TextAlignment;
-};
-
-type CustomText = {
-  text: string;
-  bold?: boolean;
-  italic?: boolean;
-  underline?: boolean;
-  color?: string;
-  font?: string;
-  size?: string;
-};
-
-// Custom type declarations for Slate
-declare module 'slate' {
-  interface CustomTypes {
-    Editor: BaseEditor & ReactEditor;
-    Element: CustomElement;
-    Text: CustomText;
-  }
-}
-
-// Create safe initial value that conforms to our types
-const DEFAULT_INITIAL_VALUE: Descendant[] = [
-  {
-    type: 'page',
-    children: [
-      {
-        type: 'paragraph',
-        children: [{ text: '' }],
-      },
-    ],
-  },
-];
-
-const PAGE_HEIGHT = 1100; // Approximately A4 height in pixels
+// Import refactored components and types
+import { DEFAULT_INITIAL_VALUE } from './editor/types';
+import { PageElement, DefaultElement } from './editor/Elements';
+import Leaf from './editor/Leaf';
+import EditorToolbar from './editor/EditorToolbar';
+import EditorFooter from './editor/EditorFooter';
+import { useEditorState } from './editor/useEditorState';
 
 interface SlateEditorProps {
   content: string;
@@ -65,11 +26,11 @@ interface SlateEditorProps {
   };
   letterStyle: LetterStyle;
   updateLetterStyle: (type: 'paperStyle' | 'borderStyle', value: string) => void;
-  paperStyleOptions: PaperStyleOption[];
-  borderStyleOptions: BorderStyleOption[];
-  fontOptions: FontOption[];
-  fontSizeOptions: FontSizeOption[];
-  colorOptions: ColorOption[];
+  paperStyleOptions: any[];
+  borderStyleOptions: any[];
+  fontOptions: any[];
+  fontSizeOptions: any[];
+  colorOptions: any[];
   applyFormatting: (formatType: string, value: any) => void;
   insertLink: () => void;
   handleAutoSave: () => void;
@@ -90,6 +51,30 @@ const SlateEditor: React.FC<SlateEditorProps> = ({
   insertLink,
   handleAutoSave,
 }) => {
+  // Editor state from custom hook
+  const {
+    isToolbarVisible,
+    setIsToolbarVisible,
+    isToolbarDetached,
+    toolbarPosition,
+    colorPickerOpen,
+    setColorPickerOpen,
+    paperStylePopoverOpen,
+    setPaperStylePopoverOpen,
+    stylePopoverOpen,
+    setStylePopoverOpen,
+    wordCount,
+    setWordCount,
+    pageCount,
+    setPageCount,
+    zoom,
+    recentColors,
+    setRecentColors,
+    toggleToolbarDetached,
+    handleZoomChange
+  } = useEditorState();
+
+  // Parse content for Slate
   const [slateValue, setSlateValue] = useState<Descendant[]>(() => {
     try {
       // Try to parse existing content as Slate value
@@ -114,18 +99,6 @@ const SlateEditor: React.FC<SlateEditorProps> = ({
   const paperSizeProps = usePaperStyle();
   const { getPaperDimensions } = paperSizeProps;
   const dimensions = getPaperDimensions();
-
-  // Editor state
-  const [isToolbarVisible, setIsToolbarVisible] = useState(true);
-  const [isToolbarDetached, setIsToolbarDetached] = useState(false);
-  const [toolbarPosition, setToolbarPosition] = useState({ x: 0, y: 0 });
-  const [colorPickerOpen, setColorPickerOpen] = useState(false);
-  const [paperStylePopoverOpen, setPaperStylePopoverOpen] = useState(false);
-  const [stylePopoverOpen, setStylePopoverOpen] = useState(false);
-  const [wordCount, setWordCount] = useState(0);
-  const [pageCount, setPageCount] = useState(1);
-  const [zoom, setZoom] = useState(100);
-  const [recentColors, setRecentColors] = useState<string[]>([]);
 
   // Create a Slate editor object that won't change across renders
   const editor = useMemo(() => withHistory(withReact(createEditor())), []);
@@ -176,13 +149,6 @@ const SlateEditor: React.FC<SlateEditorProps> = ({
     setIsToolbarVisible(true);
   };
 
-  const toggleToolbarDetached = () => {
-    setIsToolbarDetached(!isToolbarDetached);
-    if (isToolbarDetached) {
-      setToolbarPosition({ x: 0, y: 0 });
-    }
-  };
-
   // Start drag operation
   const startDrag = (event: React.PointerEvent) => {
     // Drag logic would go here
@@ -222,26 +188,6 @@ const SlateEditor: React.FC<SlateEditorProps> = ({
     handleColorChange(color);
   };
 
-  // Handle zoom change
-  const handleZoomChange = (newZoom: number) => {
-    setZoom(Math.min(Math.max(50, newZoom), 200));
-  };
-
-  // Load recent colors from localStorage
-  React.useEffect(() => {
-    const saved = localStorage.getItem('recentTextColors');
-    if (saved) {
-      try {
-        const colors = JSON.parse(saved);
-        if (Array.isArray(colors)) {
-          setRecentColors(colors.slice(0, 3));
-        }
-      } catch (e) {
-        console.error('Error loading recent colors:', e);
-      }
-    }
-  }, []);
-
   // Keyboard shortcuts
   const handleKeyDown = (event: React.KeyboardEvent) => {
     if (!event.ctrlKey && !event.metaKey) return;
@@ -267,87 +213,30 @@ const SlateEditor: React.FC<SlateEditorProps> = ({
 
   return (
     <div className="flex flex-col items-center" onMouseMove={handleMouseMove}>
-      {/* Toolbar */}
-      {isToolbarVisible && (
-        <div
-          className={`${!isToolbarDetached ? 'sticky top-0 w-full' : 'fixed'} z-50 mb-4 rounded-lg bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm shadow-lg border border-gray-100 dark:border-gray-800 py-2 px-4`}
-          style={{
-            left: isToolbarDetached ? toolbarPosition.x : 'auto',
-            top: isToolbarDetached ? toolbarPosition.y : 0,
-          }}
-        >
-          <div className="flex flex-wrap items-center gap-2">
-            {/* Grip handle */}
-            <div
-              className="cursor-grab active:cursor-grabbing p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700"
-              onPointerDown={startDrag}
-            >
-              <Grip size={16} />
-            </div>
-            
-            {/* Detach/attach button */}
-            <button
-              className={`p-1 rounded text-xs ${isToolbarDetached ? 'bg-primary text-white' : 'bg-gray-100 dark:bg-gray-700'}`}
-              onClick={toggleToolbarDetached}
-              title={isToolbarDetached ? "Attach toolbar" : "Detach toolbar"}
-            >
-              {isToolbarDetached ? "Attach" : "Detach"}
-            </button>
-            
-            {/* Text formatting controls */}
-            <FormatButton format="bold" icon={<Bold className="h-4 w-4" />} />
-            <FormatButton format="italic" icon={<Italic className="h-4 w-4" />} />
-            <FormatButton format="underline" icon={<Underline className="h-4 w-4" />} />
-            
-            {/* Text style popover */}
-            <Popover open={stylePopoverOpen} onOpenChange={setStylePopoverOpen}>
-              <PopoverTrigger asChild>
-                <Button variant="outline" size="sm">
-                  <Type className="h-4 w-4 mr-2" />
-                  Text Style
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-80">
-                <div className="space-y-4">
-                  <h3 className="font-medium">Text Styling</h3>
-                  
-                  {/* Font family, size and alignment options would go here */}
-                  {/* For brevity, these are not fully implemented in this example */}
-                </div>
-              </PopoverContent>
-            </Popover>
-            
-            {/* Color picker */}
-            <SlateColorPickerPopover
-              colorPickerOpen={colorPickerOpen} 
-              setColorPickerOpen={setColorPickerOpen}
-              onColorChange={handleColorChange}
-              onRemoveColor={handleRemoveColor}
-              onAddCustomColor={handleAddCustomColor}
-              recentColors={recentColors}
-              colorOptions={colorOptions}
-            />
-            
-            {/* Paper style popover */}
-            <PaperStylePopover
-              paperStylePopoverOpen={paperStylePopoverOpen}
-              setPaperStylePopoverOpen={setPaperStylePopoverOpen}
-              paperStyleOptions={paperStyleOptions}
-              borderStyleOptions={borderStyleOptions}
-              letterStyle={letterStyle}
-              updateLetterStyle={updateLetterStyle}
-              paperSizeProps={{
-                ...paperSizeProps,
-                paperSize: paperSizeProps.paperSize,
-                setPaperSize: paperSizeProps.setPaperSize,
-                paperSizeOptions: paperSizeProps.paperSizeOptions as PaperSizeOption[],
-                measurementUnit: paperSizeProps.measurementUnit,
-                setMeasurementUnit: paperSizeProps.setMeasurementUnit
-              }}
-            />
-          </div>
-        </div>
-      )}
+      {/* Editor Toolbar */}
+      <EditorToolbar
+        isToolbarVisible={isToolbarVisible}
+        isToolbarDetached={isToolbarDetached}
+        toolbarPosition={toolbarPosition}
+        toggleToolbarDetached={toggleToolbarDetached}
+        startDrag={startDrag}
+        colorPickerOpen={colorPickerOpen}
+        setColorPickerOpen={setColorPickerOpen}
+        onColorChange={handleColorChange}
+        onRemoveColor={handleRemoveColor}
+        onAddCustomColor={handleAddCustomColor}
+        recentColors={recentColors}
+        colorOptions={colorOptions}
+        paperStylePopoverOpen={paperStylePopoverOpen}
+        setPaperStylePopoverOpen={setPaperStylePopoverOpen}
+        paperStyleOptions={paperStyleOptions}
+        borderStyleOptions={borderStyleOptions}
+        letterStyle={letterStyle}
+        updateLetterStyle={updateLetterStyle}
+        paperSizeProps={paperSizeProps}
+        stylePopoverOpen={stylePopoverOpen}
+        setStylePopoverOpen={setStylePopoverOpen}
+      />
       
       {/* Canvas with scroll snap */}
       <div 
@@ -378,121 +267,15 @@ const SlateEditor: React.FC<SlateEditorProps> = ({
         </div>
       </div>
       
-      {/* Footer status bar */}
-      <div className="mt-4 w-full px-4 py-2 bg-gray-50 dark:bg-gray-800 rounded-lg flex justify-between items-center text-sm text-gray-500 dark:text-gray-400">
-        <div>
-          <span>{wordCount} words</span>
-          <span className="mx-2">•</span>
-          <span>{pageCount} {pageCount === 1 ? 'page' : 'pages'}</span>
-        </div>
-        
-        <div className="flex items-center gap-3">
-          <span>Zoom:</span>
-          <button 
-            className="px-2 rounded hover:bg-gray-200 dark:hover:bg-gray-700"
-            onClick={() => handleZoomChange(zoom - 10)}
-            disabled={zoom <= 50}
-          >
-            -
-          </button>
-          <span>{zoom}%</span>
-          <button 
-            className="px-2 rounded hover:bg-gray-200 dark:hover:bg-gray-700"
-            onClick={() => handleZoomChange(zoom + 10)}
-            disabled={zoom >= 200}
-          >
-            +
-          </button>
-        </div>
-      </div>
-      
-      {/* Keyboard shortcuts info */}
-      <div className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-        <p>Press <kbd className="px-1 py-0.5 rounded bg-gray-100 dark:bg-gray-800">Ctrl+B</kbd> for bold • <kbd className="px-1 py-0.5 rounded bg-gray-100 dark:bg-gray-800">Ctrl+I</kbd> for italic • <kbd className="px-1 py-0.5 rounded bg-gray-100 dark:bg-gray-800">Ctrl+U</kbd> for underline • <kbd className="px-1 py-0.5 rounded bg-gray-100 dark:bg-gray-800">ESC</kbd> to toggle toolbar</p>
-      </div>
+      {/* Editor Footer */}
+      <EditorFooter
+        wordCount={wordCount}
+        pageCount={pageCount}
+        zoom={zoom}
+        handleZoomChange={handleZoomChange}
+      />
     </div>
   );
-};
-
-// Format button component for the toolbar
-const FormatButton = ({ format, icon }: { format: string, icon: React.ReactNode }) => {
-  const editor = useSlate();
-  
-  const isActive = () => {
-    // Safely check the editor marks
-    const marks = editor.marks;
-    return marks ? Boolean(marks[format as keyof typeof marks]) : false;
-  };
-  
-  const toggleFormat = (e: React.MouseEvent) => {
-    e.preventDefault();
-    
-    if (isActive()) {
-      editor.removeMark(format);
-    } else {
-      editor.addMark(format, true);
-    }
-  };
-  
-  return (
-    <Button
-      variant={isActive() ? 'default' : 'outline'}
-      size="sm"
-      onMouseDown={toggleFormat}
-    >
-      {icon}
-    </Button>
-  );
-};
-
-// Page element component
-const PageElement = ({ attributes, children, element, letterStyle, dimensions }: any) => {
-  return (
-    <div
-      {...attributes}
-      className={`${letterStyle.paperStyle} ${letterStyle.borderStyle} page texture shadow-paper scroll-snap-align-start mb-6`}
-      style={{ 
-        width: dimensions.width,
-        minHeight: dimensions.height,
-        padding: '2cm',
-        boxSizing: 'border-box',
-        position: 'relative'
-      }}
-    >
-      {children}
-      <div className="absolute bottom-2 right-0 left-0 text-center text-xs text-gray-400">
-        Page {/* Page number would be calculated here */}
-      </div>
-    </div>
-  );
-};
-
-// Default element for paragraphs
-const DefaultElement = ({ attributes, children }: any) => {
-  return <p {...attributes}>{children}</p>;
-};
-
-// Leaf component for text formatting
-const Leaf = ({ attributes, children, leaf }: any) => {
-  let el = children;
-  
-  if (leaf.bold) {
-    el = <strong>{el}</strong>;
-  }
-  
-  if (leaf.italic) {
-    el = <em>{el}</em>;
-  }
-  
-  if (leaf.underline) {
-    el = <u>{el}</u>;
-  }
-  
-  if (leaf.color) {
-    el = <span style={{ color: leaf.color }}>{el}</span>;
-  }
-  
-  return <span {...attributes}>{el}</span>;
 };
 
 export default SlateEditor;
