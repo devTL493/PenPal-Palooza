@@ -1,6 +1,6 @@
 
 import React, { useState, useMemo, useCallback } from 'react';
-import { createEditor, Descendant, Editor, Transforms, Text, Node } from 'slate';
+import { createEditor, Descendant, Node, Text } from 'slate';
 import { Slate, Editable, withReact, ReactEditor, useSlate } from 'slate-react';
 import { withHistory } from 'slate-history';
 import { Button } from "@/components/ui/button";
@@ -39,8 +39,8 @@ declare module 'slate' {
   }
 }
 
-// Define BaseEditor separately without circular reference
-type BaseEditor = Omit<Editor, 'children'>;
+// Define BaseEditor type without circular reference
+type BaseEditor = Omit<import('slate').Editor, 'children'>;
 
 const DEFAULT_INITIAL_VALUE: Descendant[] = [
   {
@@ -51,7 +51,7 @@ const DEFAULT_INITIAL_VALUE: Descendant[] = [
         children: [{ text: '' }],
       },
     ],
-  },
+  } as CustomElement,
 ];
 
 const PAGE_HEIGHT = 1100; // Approximately A4 height in pixels
