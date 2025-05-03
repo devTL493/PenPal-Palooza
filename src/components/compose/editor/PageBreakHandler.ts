@@ -123,10 +123,15 @@ export const handlePageBreaks = (editor: ReactEditor, pageHeight: number): boole
     
     // Process each page
     for (const [pageNode, pagePath] of pages) {
+      if (!Element.isElement(pageNode)) continue;
+      
       // Check each child of the page
       for (let i = 0; i < pageNode.children.length; i++) {
         const childPath = [...pagePath, i];
-        const childNode = Node.get(editor, childPath) as Element;
+        const childNode = Node.get(editor, childPath);
+        
+        // Make sure we only work with Element nodes with children
+        if (!Element.isElement(childNode)) continue;
         
         // Check if this node overflows
         if (doesNodeOverflow(editor, childNode, childPath, pageHeight)) {
