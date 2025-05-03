@@ -122,7 +122,7 @@ const ColorPickerPopover: React.FC<ColorPickerPopoverProps> = ({
           ></span>
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-96 p-0 color-picker" align="start">
+      <PopoverContent className="w-96 p-0 color-picker !overflow-visible" align="start">
         <div className="p-3 space-y-4">
           <div className="flex justify-between items-center mb-2">
             <h3 className="font-medium">Text Color</h3>
@@ -186,22 +186,34 @@ const ColorPickerPopover: React.FC<ColorPickerPopoverProps> = ({
                 />
               ))}
               
-              {/* Add custom color */}
+              {/* Add custom color with auto-flipping popover */}
               <div className="flex gap-2">
-                <label 
-                  htmlFor="color-picker-input" 
-                  className="w-8 h-8 rounded border flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer"
-                  title="Add Custom Color"
-                >
-                  <Plus className="h-4 w-4" />
-                  <input
-                    id="color-picker-input"
-                    type="color"
-                    value={customColor}
-                    onChange={handleColorChange}
-                    className="sr-only"
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <label 
+                      htmlFor="color-picker-input" 
+                      className="w-8 h-8 rounded border flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer"
+                      title="Add Custom Color"
+                    >
+                      <Plus className="h-4 w-4" />
+                      <input
+                        id="color-picker-input"
+                        type="color"
+                        value={customColor}
+                        onChange={handleColorChange}
+                        className="sr-only"
+                      />
+                    </label>
+                  </PopoverTrigger>
+                  <PopoverContent
+                    side="bottom"
+                    align="start"
+                    sideOffset={4}
+                    collisionPadding={8}
+                    avoidCollisions
+                    className="!p-0 !overflow-visible"
                   />
-                </label>
+                </Popover>
                 
                 {/* Color picker button (replacing Eyedropper) */}
                 {'EyeDropper' in window && (
