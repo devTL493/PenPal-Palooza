@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { createEditor, Descendant, Node, Editor, Transforms, Element as SlateElement, Text } from 'slate';
 import { Slate, Editable, withReact, ReactEditor, useSlateStatic } from 'slate-react';
@@ -8,7 +7,7 @@ import { usePaperStyle } from '@/hooks/usePaperStyle';
 import './slateEditor.css';
 
 // Import refactored components and types
-import { DEFAULT_INITIAL_VALUE } from './editor/types';
+import { DEFAULT_INITIAL_VALUE, CustomEditor } from './editor/types';
 import { PageElement, DefaultElement } from './editor/Elements';
 import Leaf from './editor/Leaf';
 import EditorToolbar from './editor/EditorToolbar';
@@ -88,7 +87,7 @@ const SlateEditor: React.FC<SlateEditorProps> = ({
     fontFamily: 'serif',
     fontSize: '16px',
     lineSpacing: '1.15',
-    alignment: 'left'
+    alignment: 'left' as 'left' | 'center' | 'right' | 'justify'
   });
 
   // For page break calculation
@@ -123,7 +122,7 @@ const SlateEditor: React.FC<SlateEditorProps> = ({
 
   // Create a Slate editor object that won't change across renders
   const editor = useMemo(() => {
-    const e = withHistory(withReact(createEditor()));
+    const e = withHistory(withReact(createEditor())) as CustomEditor;
     
     // Override insertBreak to handle page breaks
     const { insertBreak } = e;
@@ -132,7 +131,7 @@ const SlateEditor: React.FC<SlateEditorProps> = ({
       
       // Check for page breaks after inserting a line break
       setTimeout(() => {
-        handlePageBreaks(e as ReactEditor, pageHeight);
+        handlePageBreaks(e, pageHeight);
         updatePageNumbers(e);
       }, 0);
     };
@@ -212,7 +211,7 @@ const SlateEditor: React.FC<SlateEditorProps> = ({
     // Check for page overflows
     setTimeout(() => {
       if (editor && ReactEditor.isFocused(editor)) {
-        const changed = handlePageBreaks(editor as ReactEditor, pageHeight);
+        const changed = handlePageBreaks(editor, pageHeight);
         if (changed) {
           updatePageNumbers(editor);
         }
@@ -227,7 +226,6 @@ const SlateEditor: React.FC<SlateEditorProps> = ({
 
   // Start drag operation
   const startDrag = (event: React.PointerEvent) => {
-    // Implement drag logic for detached toolbar
     const startX = event.clientX;
     const startY = event.clientY;
     const startLeft = toolbarPosition.x;
@@ -286,7 +284,7 @@ const SlateEditor: React.FC<SlateEditorProps> = ({
     setTextStyles(prev => ({ ...prev, lineSpacing: value }));
   };
 
-  const handleAlignmentChange = (value: string) => {
+  const handleAlignmentChange = (value: 'left' | 'center' | 'right' | 'justify') => {
     Transforms.setNodes(
       editor,
       { align: value },
@@ -370,7 +368,8 @@ const SlateEditor: React.FC<SlateEditorProps> = ({
         if (match) {
           const [node] = match;
           if ('align' in node) {
-            setTextStyles(prev => ({ ...prev, alignment: node.align as string || 'left' }));
+            const alignment = node.align as 'left' | 'center' | 'right' | 'justify' || 'left';
+            setTextStyles(prev => ({ ...prev, alignment }));
           }
         }
       } catch (err) {

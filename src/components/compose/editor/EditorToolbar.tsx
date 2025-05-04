@@ -52,12 +52,12 @@ interface EditorToolbarProps {
     fontFamily: string;
     fontSize: string;
     lineSpacing: string;
-    alignment: string;
+    alignment: 'left' | 'center' | 'right' | 'justify';
   };
   onFontFamilyChange: (value: string) => void;
   onFontSizeChange: (value: string) => void;
   onLineSpacingChange: (value: string) => void;
-  onAlignmentChange: (value: string) => void;
+  onAlignmentChange: (value: 'left' | 'center' | 'right' | 'justify') => void;
 }
 
 const EditorToolbar: React.FC<EditorToolbarProps> = ({

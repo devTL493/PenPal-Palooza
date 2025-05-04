@@ -1,6 +1,8 @@
 
 import { Editor, Transforms, Element, Node, Path } from 'slate';
 import { ReactEditor } from 'slate-react';
+import { HistoryEditor } from 'slate-history';
+import { CustomEditor } from './types';
 
 // Utility to check if a block is a page
 export const isPageElement = (element: any): boolean => {
@@ -8,7 +10,7 @@ export const isPageElement = (element: any): boolean => {
 };
 
 // Utility to check if a node overflows its container
-export const doesNodeOverflow = (editor: ReactEditor, node: Node, path: Path, pageHeight: number): boolean => {
+export const doesNodeOverflow = (editor: ReactEditor & HistoryEditor, node: Node, path: Path, pageHeight: number): boolean => {
   try {
     if (!pageHeight) return false;
     
@@ -39,7 +41,7 @@ export const doesNodeOverflow = (editor: ReactEditor, node: Node, path: Path, pa
 
 // Split paragraph at the last fitting point
 export const splitParagraphAtOverflow = (
-  editor: ReactEditor,
+  editor: ReactEditor & HistoryEditor,
   node: Element,
   path: Path,
   pageHeight: number
@@ -114,7 +116,7 @@ export const splitParagraphAtOverflow = (
 };
 
 // Main function to handle page breaks
-export const handlePageBreaks = (editor: ReactEditor, pageHeight: number): boolean => {
+export const handlePageBreaks = (editor: ReactEditor & HistoryEditor, pageHeight: number): boolean => {
   try {
     // Find all page nodes
     const pages = Editor.nodes(editor, {

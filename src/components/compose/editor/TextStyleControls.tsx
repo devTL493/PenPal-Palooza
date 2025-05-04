@@ -52,12 +52,12 @@ interface TextStyleControlsProps {
   fontSize: string;
   isBold: boolean;
   lineSpacing: string;
-  alignment: string;
+  alignment: 'left' | 'center' | 'right' | 'justify';
   onFontFamilyChange: (value: string) => void;
   onFontSizeChange: (value: string) => void;
   onBoldToggle: () => void;
   onLineSpacingChange: (value: string) => void;
-  onAlignmentChange: (value: string) => void;
+  onAlignmentChange: (value: 'left' | 'center' | 'right' | 'justify') => void;
 }
 
 const TextStyleControls: React.FC<TextStyleControlsProps> = ({
