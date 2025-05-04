@@ -18,7 +18,6 @@ import {
   handlePageBreaks, 
   updatePageNumbers, 
   handleSelectAll, 
-  handlePaste, 
   getPageHeight 
 } from './editor/PageBreakHandler';
 
@@ -103,6 +102,7 @@ const SlateEditor: React.FC<SlateEditorProps> = ({
   const [pageHeight, setPageHeight] = useState(0);
   const [isTyping, setIsTyping] = useState(false);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [savedSelection, setSavedSelection] = useState<any>(null);
 
   // Parse content for Slate
   const [slateValue, setSlateValue] = useState<Descendant[]>(() => {
@@ -275,8 +275,25 @@ const SlateEditor: React.FC<SlateEditorProps> = ({
     document.addEventListener('pointerup', handleUp);
   };
 
+  // Save and restore selection
+  const saveCurrentSelection = () => {
+    setSavedSelection(editor.selection);
+  };
+  
+  const restoreSelection = () => {
+    if (savedSelection) {
+      Transforms.select(editor, savedSelection);
+    }
+  };
+
   // Handle format toggling from the toolbar
   const handleFormatToggle = (format: string) => {
+    // Save selection before applying format
+    saveCurrentSelection();
+    
+    // Restore selection
+    restoreSelection();
+    
     if (activeFormats[format]) {
       editor.removeMark(format);
     } else {
@@ -292,21 +309,37 @@ const SlateEditor: React.FC<SlateEditorProps> = ({
 
   // Text style handlers
   const handleFontFamilyChange = (value: string) => {
+    // Save and restore selection
+    saveCurrentSelection();
+    restoreSelection();
+    
     editor.addMark('fontFamily', value);
     setTextStyles(prev => ({ ...prev, fontFamily: value }));
   };
 
   const handleFontSizeChange = (value: string) => {
+    // Save and restore selection
+    saveCurrentSelection();
+    restoreSelection();
+    
     editor.addMark('fontSize', value);
     setTextStyles(prev => ({ ...prev, fontSize: value }));
   };
 
   const handleLineSpacingChange = (value: string) => {
+    // Save and restore selection
+    saveCurrentSelection();
+    restoreSelection();
+    
     editor.addMark('lineHeight', value);
     setTextStyles(prev => ({ ...prev, lineSpacing: value }));
   };
 
   const handleAlignmentChange = (value: 'left' | 'center' | 'right' | 'justify') => {
+    // Save and restore selection
+    saveCurrentSelection();
+    restoreSelection();
+    
     Transforms.setNodes(
       editor,
       { align: value },
@@ -317,6 +350,10 @@ const SlateEditor: React.FC<SlateEditorProps> = ({
 
   // Handle text color
   const handleColorChange = (color: string) => {
+    // Save and restore selection
+    saveCurrentSelection();
+    restoreSelection();
+    
     editor.addMark('color', color);
     
     // Add to recent colors
@@ -327,48 +364,70 @@ const SlateEditor: React.FC<SlateEditorProps> = ({
     
     setRecentColors(updatedColors);
     localStorage.setItem('recentTextColors', JSON.stringify(updatedColors));
+    
+    // Check for pagination after color changes
+    setTimeout(() => {
+      if (editor) {
+        handlePageBreaks(editor, pageHeight);
+        updatePageNumbers(editor);
+      }
+    }, 100);
   };
 
   const handleRemoveColor = () => {
+    // Save and restore selection
+    saveCurrentSelection();
+    restoreSelection();
+    
     editor.removeMark('color');
   };
 
   const handleAddCustomColor = (color: string) => {
+    // Just call handleColorChange as we now apply immediately
     handleColorChange(color);
   };
 
   // Enhanced keyboard shortcuts handling
   const handleKeyDown = (event: React.KeyboardEvent) => {
     // Handle Ctrl+A for select all
-    handleSelectAll(event, editor);
+    if ((event.ctrlKey || event.metaKey) && event.key === 'a') {
+      event.preventDefault();
+      
+      // Use Slate's API to select all content
+      Transforms.select(editor, {
+        anchor: Editor.start(editor, []),
+        focus: Editor.end(editor, []),
+      });
+      return;
+    }
     
     // Handle standard formatting shortcuts
-    if (!event.ctrlKey && !event.metaKey) return;
-    
-    switch (event.key) {
-      case 'b': {
-        event.preventDefault();
-        handleFormatToggle('bold');
-        break;
-      }
-      case 'i': {
-        event.preventDefault();
-        handleFormatToggle('italic');
-        break;
-      }
-      case 'u': {
-        event.preventDefault();
-        handleFormatToggle('underline');
-        break;
+    if (event.ctrlKey || event.metaKey) {
+      switch (event.key) {
+        case 'b': {
+          event.preventDefault();
+          handleFormatToggle('bold');
+          break;
+        }
+        case 'i': {
+          event.preventDefault();
+          handleFormatToggle('italic');
+          break;
+        }
+        case 'u': {
+          event.preventDefault();
+          handleFormatToggle('underline');
+          break;
+        }
       }
     }
   };
 
-  // Custom paste handler
-  const handleEditorPaste = (event: React.ClipboardEvent<HTMLDivElement>) => {
-    handlePaste(event, editor);
+  // Save selection before opening any popover
+  const handleBeforePopoverOpen = () => {
+    saveCurrentSelection();
   };
-
+  
   // Update active formats when selection changes
   useEffect(() => {
     const updateActiveFormats = () => {
@@ -431,6 +490,13 @@ const SlateEditor: React.FC<SlateEditorProps> = ({
     document.addEventListener('keydown', handleEscape);
     return () => document.removeEventListener('keydown', handleEscape);
   }, []);
+  
+  // Handle the opening and closing of popovers
+  useEffect(() => {
+    if (colorPickerOpen || paperStylePopoverOpen || stylePopoverOpen) {
+      saveCurrentSelection();
+    }
+  }, [colorPickerOpen, paperStylePopoverOpen, stylePopoverOpen]);
 
   return (
     <div 
@@ -451,21 +517,30 @@ const SlateEditor: React.FC<SlateEditorProps> = ({
           toggleToolbarDetached={toggleToolbarDetached}
           startDrag={startDrag}
           colorPickerOpen={colorPickerOpen}
-          setColorPickerOpen={setColorPickerOpen}
+          setColorPickerOpen={(open) => {
+            if (open) handleBeforePopoverOpen();
+            setColorPickerOpen(open);
+          }}
           onColorChange={handleColorChange}
           onRemoveColor={handleRemoveColor}
           onAddCustomColor={handleAddCustomColor}
           recentColors={recentColors}
           colorOptions={colorOptions}
           paperStylePopoverOpen={paperStylePopoverOpen}
-          setPaperStylePopoverOpen={setPaperStylePopoverOpen}
+          setPaperStylePopoverOpen={(open) => {
+            if (open) handleBeforePopoverOpen();
+            setPaperStylePopoverOpen(open);
+          }}
           paperStyleOptions={paperStyleOptions}
           borderStyleOptions={borderStyleOptions}
           letterStyle={letterStyle}
           updateLetterStyle={updateLetterStyle}
           paperSizeProps={paperSizeProps}
           stylePopoverOpen={stylePopoverOpen}
-          setStylePopoverOpen={setStylePopoverOpen}
+          setStylePopoverOpen={(open) => {
+            if (open) handleBeforePopoverOpen();
+            setStylePopoverOpen(open);
+          }}
           activeFormats={activeFormats}
           onFormatToggle={handleFormatToggle}
           textStyles={textStyles}
@@ -496,7 +571,6 @@ const SlateEditor: React.FC<SlateEditorProps> = ({
               renderElement={renderElement}
               renderLeaf={renderLeaf}
               onKeyDown={handleKeyDown}
-              onPaste={handleEditorPaste}
               spellCheck
               className="outline-none cursor-text"
             />
