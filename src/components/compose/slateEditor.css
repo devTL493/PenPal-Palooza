@@ -1,119 +1,134 @@
 
-/* Editor layout */
-.canvas {
+.word-processor-canvas {
   height: calc(100vh - 200px);
   overflow-y: auto;
   scroll-snap-type: y mandatory;
-  position: relative;
-  background-color: #f5f5f5;
-  padding: 2rem 0;
 }
 
-.pages-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 1rem;
-  min-height: 100%;
-}
-
-/* Page styling */
 .page {
   width: var(--page-width, 8.5in);
   height: var(--page-height, 11in);
+  min-height: var(--page-height, 11in);
   padding: var(--margin, 2cm);
   margin: 2rem auto;
   box-sizing: border-box;
   border: 1px solid #DDD;
   background: #FFF;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   scroll-snap-align: start;
   overflow: visible;
   position: relative;
-  display: flex;
-  flex-direction: column;
 }
 
-/* Page number footer */
-.page::after {
-  content: attr(data-page-number) " of " attr(data-page-count);
+.texture {
+  position: relative;
+}
+
+.texture::before {
+  content: '';
   position: absolute;
-  bottom: 1rem;
-  right: 2rem;
-  font-size: 0.8rem;
-  color: #777;
-  font-family: system-ui, sans-serif;
-}
-
-/* Toolbar styling */
-.toolbar {
-  position: sticky;
   top: 0;
-  z-index: 100;
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(5px);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  border-bottom: 1px solid #eee;
-  transition: opacity 0.2s ease-in-out;
-}
-
-.toolbar.hidden {
-  opacity: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   pointer-events: none;
+  opacity: 0.03;
+  background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM12 86c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm28-65c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm23-11c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-6 60c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm29 22c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zM32 63c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm57-13c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-9-21c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM60 91c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM35 41c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM12 60c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2z' fill='%23000000' fill-opacity='0.1' fill-rule='evenodd'/%3E%3C/svg%3E");
 }
 
-.toolbar.detached {
+.shadow-paper {
+  box-shadow: 0 1px 2px rgba(0,0,0,0.07), 
+              0 2px 4px rgba(0,0,0,0.07), 
+              0 4px 8px rgba(0,0,0,0.07),
+              0 8px 16px rgba(0,0,0,0.07);
+}
+
+[data-page]:after {
+  content: "Page " attr(data-page) " of " attr(data-total-pages);
   position: absolute;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
-}
-
-/* Make sure color pickers aren't clipped */
-.color-picker {
-  overflow: visible !important;
-}
-
-/* Custom scrollbar styling */
-.canvas::-webkit-scrollbar {
-  width: 10px;
-}
-
-.canvas::-webkit-scrollbar-track {
-  background: #f1f1f1;
-}
-
-.canvas::-webkit-scrollbar-thumb {
-  background: #c1c1c1;
-  border-radius: 5px;
-}
-
-.canvas::-webkit-scrollbar-thumb:hover {
-  background: #a8a8a8;
-}
-
-/* Text formatting */
-.paragraph {
-  margin-bottom: 1em;
-}
-
-.text-align-left {
-  text-align: left;
-}
-
-.text-align-center {
+  bottom: 10px;
+  left: 0;
+  right: 0;
   text-align: center;
+  font-size: 0.75rem;
+  color: #666;
 }
 
-.text-align-right {
-  text-align: right;
+/* Paper styles */
+.bg-paper {
+  background-color: #fff;
 }
 
-.text-align-justify {
-  text-align: justify;
+.bg-vintage {
+  background-color: #f8f4e3;
 }
 
-/* Avoid nested scrollbars */
-.page > * {
-  overflow: visible;
+.bg-parchment {
+  background-color: #f2e8c0;
+}
+
+.bg-blueprint {
+  background-color: #d9edf7;
+}
+
+.bg-graph {
+  background-color: #fff;
+  background-image: linear-gradient(#ddd 1px, transparent 1px), 
+                    linear-gradient(90deg, #ddd 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+.bg-lines {
+  background-color: #fff;
+  background-image: linear-gradient(#e5e5e5 1px, transparent 1px);
+  background-size: 100% 20px;
+}
+
+/* Border styles */
+.border-none {
+  border: 1px solid #ddd;
+}
+
+.border-thin {
+  border: 1px solid #000;
+}
+
+.border-medium {
+  border: 2px solid #000;
+}
+
+.border-thick {
+  border: 4px solid #000;
+}
+
+.border-double {
+  border: 4px double #000;
+}
+
+.border-dashed {
+  border: 2px dashed #000;
+}
+
+.border-dotted {
+  border: 2px dotted #000;
+}
+
+.border-grooved {
+  border: 4px groove #000;
+}
+
+.border-ridge {
+  border: 4px ridge #000;
+}
+
+.border-inset {
+  border: 4px inset #000;
+}
+
+.border-outset {
+  border: 4px outset #000;
+}
+
+.border-fancy {
+  border: 10px solid transparent;
+  border-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='75' height='75'%3E%3Cg fill='none' stroke='%23B88846' stroke-width='2'%3E%3Cpath d='M1 1h73v73H1z'/%3E%3Cpath d='M8 8h59v59H8z'/%3E%3Cpath d='M8 8L1 1m7 66L1 74m66-66l7-7m0 73l-7-7'/%3E%3C/g%3E%3C/svg%3E") 25 stretch;
 }

@@ -10,8 +10,7 @@ export const jsx = createHyperscript({
   elements: {
     paragraph: { type: 'paragraph' },
     page: { type: 'page' }
-  },
-  marks: {}
+  }
 });
 
 // Utility to check if a block is a page
@@ -49,32 +48,25 @@ export const deserializeHTML = (html: string): Node[] => {
     } else if (['b', 'strong'].includes(tagName)) {
       // Bold text
       return {
-        type: 'text',
-        bold: true,
-        children: Array.from(element.childNodes).map(convertDOMNodeToSlate).filter(Boolean)
+        text: element.textContent || '',
+        bold: true
       };
     } else if (['i', 'em'].includes(tagName)) {
       // Italic text
       return {
-        type: 'text',
-        italic: true,
-        children: Array.from(element.childNodes).map(convertDOMNodeToSlate).filter(Boolean)
+        text: element.textContent || '',
+        italic: true
       };
     } else if (tagName === 'u') {
       // Underline text
       return {
-        type: 'text',
-        underline: true,
-        children: Array.from(element.childNodes).map(convertDOMNodeToSlate).filter(Boolean)
+        text: element.textContent || '',
+        underline: true
       };
     } else if (tagName === 'span') {
       // Handle span with style attributes
       const style = element.getAttribute('style') || '';
       const colorMatch = style.match(/color:\s*([^;]+)/i);
-      
-      const children = Array.from(element.childNodes)
-        .map(convertDOMNodeToSlate)
-        .filter(Boolean);
       
       if (colorMatch) {
         return {
@@ -83,14 +75,14 @@ export const deserializeHTML = (html: string): Node[] => {
         };
       }
       
-      return children;
+      return { text: element.textContent || '' };
     } else if (tagName === 'div' || tagName === 'body') {
       // Flatten divs into paragraphs
       const paragraphs: any[] = [];
       let currentTextNodes: any[] = [];
       
       Array.from(element.childNodes).forEach(child => {
-        const converted = convertDOMNodeToSlate(child);
+        const converted = convertDOMNodeToSlate(child as globalThis.Node);
         
         if (converted) {
           if (Array.isArray(converted)) {
