@@ -1,5 +1,5 @@
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useCallback } from 'react';
 import { Editor } from 'slate';
 import { useSelectionHandling } from './useSelectionHandling';
 import { useColorHandling } from './useColorHandling';
@@ -18,6 +18,15 @@ export function useSlateEditor(editor: CustomEditor, pageHeight: number) {
   const selectionUtils = useSelectionHandling(editor);
   const colorUtils = useColorHandling(editor);
   const paginationUtils = usePaginationHandling(editor, pageHeight);
+  
+  // Handle paste events with pagination
+  const handlePasteWithPagination = useCallback((event: React.ClipboardEvent) => {
+    // Default paste handling will be done by Slate
+    // After paste operation, check pagination
+    setTimeout(() => {
+      paginationUtils.paginateContent();
+    }, 0);
+  }, [paginationUtils]);
   
   // Enhanced keyboard handler
   const handleKeyDown = (event: React.KeyboardEvent) => {
@@ -46,6 +55,21 @@ export function useSlateEditor(editor: CustomEditor, pageHeight: number) {
           editor.addMark('underline', true);
           break;
         }
+        case 'c': {
+          // Let the browser handle copy
+          break;
+        }
+        case 'v': {
+          // Let the browser handle paste, then check pagination
+          setTimeout(() => {
+            paginationUtils.paginateContent();
+          }, 0);
+          break;
+        }
+        case 'x': {
+          // Let the browser handle cut
+          break;
+        }
       }
     }
   };
@@ -71,6 +95,9 @@ export function useSlateEditor(editor: CustomEditor, pageHeight: number) {
     setIsTyping,
     
     // Enhanced keyboard handler
-    handleKeyDown
+    handleKeyDown,
+    
+    // Paste handler with pagination
+    handlePasteWithPagination
   };
 }

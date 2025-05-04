@@ -128,6 +128,14 @@ const SlateEditor: React.FC<SlateEditorProps> = ({
         slateEditorUtils.paginateContent();
       }, 0);
     };
+
+    // Add custom event handlers to enable copy/paste
+    const { onChange } = e;
+    e.onChange = () => {
+      if (onChange) {
+        onChange();
+      }
+    };
     
     return e;
   }, [pageHeight]);

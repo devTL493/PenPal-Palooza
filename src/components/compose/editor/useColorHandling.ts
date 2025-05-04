@@ -1,6 +1,6 @@
 
 import { useCallback, useState, useEffect } from 'react';
-import { Editor, Transforms, Text } from 'slate';
+import { Editor } from 'slate';
 import { CustomEditor } from './types';
 
 export function useColorHandling(editor: CustomEditor) {
@@ -22,7 +22,8 @@ export function useColorHandling(editor: CustomEditor) {
   // Handle color change
   const handleColorChange = useCallback((color: string) => {
     // Apply the color to the selected text
-    Editor.addMark(editor, 'color', color);
+    // Using editor.addMark for consistency with other formatting operations
+    editor.addMark('color', color);
     
     // Update recent colors
     const updatedColors = [
@@ -36,7 +37,7 @@ export function useColorHandling(editor: CustomEditor) {
   
   // Remove color formatting
   const handleRemoveColor = useCallback(() => {
-    Editor.removeMark(editor, 'color');
+    editor.removeMark('color');
   }, [editor]);
   
   return {
