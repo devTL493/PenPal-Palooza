@@ -1,5 +1,6 @@
 
 import { useMemo, useState } from 'react';
+import { Editor } from 'slate';
 import { useSelectionHandling } from './useSelectionHandling';
 import { useColorHandling } from './useColorHandling';
 import { usePaginationHandling } from './usePaginationHandling';
@@ -32,17 +33,17 @@ export function useSlateEditor(editor: CustomEditor, pageHeight: number) {
       switch (event.key) {
         case 'b': {
           event.preventDefault();
-          Editor.addMark(editor, 'bold', true);
+          editor.addMark('bold', true);
           break;
         }
         case 'i': {
           event.preventDefault();
-          Editor.addMark(editor, 'italic', true);
+          editor.addMark('italic', true);
           break;
         }
         case 'u': {
           event.preventDefault();
-          Editor.addMark(editor, 'underline', true);
+          editor.addMark('underline', true);
           break;
         }
       }

@@ -58,6 +58,8 @@ interface EditorToolbarProps {
   onFontSizeChange: (value: string) => void;
   onLineSpacingChange: (value: string) => void;
   onAlignmentChange: (value: 'left' | 'center' | 'right' | 'justify') => void;
+  // Add the missing handleMouseDown prop
+  handleMouseDown: (e: React.MouseEvent) => void;
 }
 
 const EditorToolbar: React.FC<EditorToolbarProps> = ({
