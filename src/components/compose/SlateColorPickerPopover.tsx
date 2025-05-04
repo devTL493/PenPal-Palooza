@@ -40,17 +40,13 @@ const SlateColorPickerPopover: React.FC<SlateColorPickerPopoverProps> = ({
   // Flatten color palette for the grid 
   const flattenedPalette = Object.values(colorPalette).flat();
   
-  // Handle color input change
+  // Updated to apply color immediately on change
   const handleColorChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setCustomColor(e.target.value);
+    const color = e.target.value;
+    setCustomColor(color);
+    onColorChange(color); // Apply color immediately
   };
   
-  // Handle custom color submission
-  const handleAddCustomColor = () => {
-    onAddCustomColor(customColor);
-    setColorPickerOpen(false);
-  };
-
   // Handle eyedropper if supported by the browser
   const handleEyedropper = async () => {
     if ('EyeDropper' in window) {
@@ -60,11 +56,17 @@ const SlateColorPickerPopover: React.FC<SlateColorPickerPopoverProps> = ({
         const result = await eyeDropper.open();
         if (result.sRGBHex) {
           setCustomColor(result.sRGBHex);
+          onColorChange(result.sRGBHex); // Apply immediately
         }
       } catch (e) {
         console.error('Error using eyedropper:', e);
       }
     }
+  };
+
+  // Prevent blur on mouse down
+  const handleMouseDown = (e: React.MouseEvent) => {
+    e.preventDefault();
   };
 
   // Fallback JS for non-Popover setups
@@ -89,6 +91,7 @@ const SlateColorPickerPopover: React.FC<SlateColorPickerPopoverProps> = ({
           variant="outline" 
           size="sm"
           className="relative"
+          onMouseDown={handleMouseDown}
         >
           <Palette className="h-4 w-4 mr-2" />
           Text Color
@@ -106,6 +109,7 @@ const SlateColorPickerPopover: React.FC<SlateColorPickerPopoverProps> = ({
             size="sm"
             onClick={() => setColorPickerOpen(false)}
             className="h-8 w-8 p-0"
+            onMouseDown={handleMouseDown}
           >
             <X className="h-4 w-4" />
           </Button>
@@ -118,6 +122,7 @@ const SlateColorPickerPopover: React.FC<SlateColorPickerPopoverProps> = ({
             size="sm"
             onClick={onRemoveColor}
             className="w-full justify-start"
+            onMouseDown={handleMouseDown}
           >
             <div className="w-4 h-4 mr-2 border rounded flex items-center justify-center">
               <X className="h-3 w-3" />
@@ -138,6 +143,7 @@ const SlateColorPickerPopover: React.FC<SlateColorPickerPopoverProps> = ({
                 title={color}
                 type="button"
                 aria-label={`Color ${color}`}
+                onMouseDown={handleMouseDown}
               />
             ))}
           </div>
@@ -158,6 +164,7 @@ const SlateColorPickerPopover: React.FC<SlateColorPickerPopoverProps> = ({
                 title="Recent custom color"
                 aria-label={`Recent color ${color}`}
                 type="button"
+                onMouseDown={handleMouseDown}
               />
             ))}
             
@@ -169,6 +176,7 @@ const SlateColorPickerPopover: React.FC<SlateColorPickerPopoverProps> = ({
                     htmlFor="color-picker-input" 
                     className="w-8 h-8 rounded border flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer"
                     title="Add Custom Color"
+                    onMouseDown={handleMouseDown}
                   >
                     <Plus className="h-4 w-4" />
                     <input
@@ -198,6 +206,7 @@ const SlateColorPickerPopover: React.FC<SlateColorPickerPopoverProps> = ({
                   title="Pick Color from Screen"
                   aria-label="Pick color from screen"
                   type="button"
+                  onMouseDown={handleMouseDown}
                 >
                   <Palette className="h-4 w-4" />
                 </button>
@@ -212,15 +221,18 @@ const SlateColorPickerPopover: React.FC<SlateColorPickerPopoverProps> = ({
                 <input
                   type="text"
                   value={customColor}
-                  onChange={(e) => setCustomColor(e.target.value)}
+                  onChange={(e) => {
+                    setCustomColor(e.target.value);
+                    // Don't apply text color immediately on text input to prevent invalid colors
+                  }}
                   className="px-2 py-1 text-sm border rounded w-20"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      onColorChange(customColor);
+                    }
+                  }}
+                  onBlur={() => onColorChange(customColor)}
                 />
-                <Button 
-                  size="sm" 
-                  onClick={handleAddCustomColor}
-                >
-                  Apply
-                </Button>
               </div>
             </div>
           </div>

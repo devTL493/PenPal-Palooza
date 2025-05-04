@@ -1,16 +1,191 @@
 
-import { Editor, Transforms, Element, Node, Path } from 'slate';
+import { Editor, Transforms, Element, Node, Path, Range, Point } from 'slate';
 import { ReactEditor } from 'slate-react';
 import { HistoryEditor } from 'slate-history';
-import { CustomEditor } from './types';
+import { CustomEditor, ParagraphElement } from './types';
+import { jsx } from 'slate-hyperscript';
 
 // Utility to check if a block is a page
 export const isPageElement = (element: any): boolean => {
   return element.type === 'page';
 };
 
+// Convert HTML text to Slate nodes
+export const deserializeHTML = (html: string): Node[] => {
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(html, 'text/html');
+  
+  // Function to convert DOM node to Slate node
+  const convertDOMNodeToSlate = (node: Node): any => {
+    if (node.nodeType === 3) { // Text node
+      return { text: node.textContent || '' };
+    } else if (node.nodeType !== 1) { // Not an element
+      return null;
+    }
+    
+    const element = node as HTMLElement;
+    const tagName = element.tagName.toLowerCase();
+    
+    // Handle different HTML tags
+    if (tagName === 'p') {
+      // Create paragraph with children
+      const children = Array.from(element.childNodes)
+        .map(convertDOMNodeToSlate)
+        .filter(Boolean);
+      
+      return {
+        type: 'paragraph',
+        children: children.length ? children : [{ text: '' }]
+      };
+    } else if (['b', 'strong'].includes(tagName)) {
+      // Bold text
+      return {
+        type: 'text',
+        bold: true,
+        children: Array.from(element.childNodes).map(convertDOMNodeToSlate).filter(Boolean)
+      };
+    } else if (['i', 'em'].includes(tagName)) {
+      // Italic text
+      return {
+        type: 'text',
+        italic: true,
+        children: Array.from(element.childNodes).map(convertDOMNodeToSlate).filter(Boolean)
+      };
+    } else if (tagName === 'u') {
+      // Underline text
+      return {
+        type: 'text',
+        underline: true,
+        children: Array.from(element.childNodes).map(convertDOMNodeToSlate).filter(Boolean)
+      };
+    } else if (tagName === 'span') {
+      // Handle span with style attributes
+      const style = element.getAttribute('style') || '';
+      const colorMatch = style.match(/color:\s*([^;]+)/i);
+      
+      const children = Array.from(element.childNodes)
+        .map(convertDOMNodeToSlate)
+        .filter(Boolean);
+      
+      if (colorMatch) {
+        return {
+          text: element.textContent || '',
+          color: colorMatch[1]
+        };
+      }
+      
+      return children;
+    } else if (tagName === 'div' || tagName === 'body') {
+      // Flatten divs into paragraphs
+      const paragraphs: any[] = [];
+      let currentTextNodes: any[] = [];
+      
+      Array.from(element.childNodes).forEach(child => {
+        const converted = convertDOMNodeToSlate(child);
+        
+        if (converted) {
+          if (Array.isArray(converted)) {
+            // Flatten array
+            converted.forEach(item => {
+              if (item.type === 'paragraph') {
+                // If we have accumulated text nodes, create a paragraph
+                if (currentTextNodes.length > 0) {
+                  paragraphs.push({
+                    type: 'paragraph',
+                    children: currentTextNodes
+                  });
+                  currentTextNodes = [];
+                }
+                paragraphs.push(item);
+              } else {
+                currentTextNodes.push(item);
+              }
+            });
+          } else if (converted.type === 'paragraph') {
+            // If we have accumulated text nodes, create a paragraph
+            if (currentTextNodes.length > 0) {
+              paragraphs.push({
+                type: 'paragraph',
+                children: currentTextNodes
+              });
+              currentTextNodes = [];
+            }
+            paragraphs.push(converted);
+          } else {
+            currentTextNodes.push(converted);
+          }
+        }
+      });
+      
+      // Handle any remaining text nodes
+      if (currentTextNodes.length > 0) {
+        paragraphs.push({
+          type: 'paragraph',
+          children: currentTextNodes
+        });
+      }
+      
+      return paragraphs.length ? paragraphs : [{ type: 'paragraph', children: [{ text: '' }] }];
+    }
+    
+    // Default to returning the text content
+    return { text: element.textContent || '' };
+  };
+  
+  // Start conversion from body
+  const result = convertDOMNodeToSlate(doc.body);
+  
+  // Ensure we return an array of nodes
+  return Array.isArray(result) ? result : [result];
+};
+
+// Custom paste handler
+export const handlePaste = (
+  event: React.ClipboardEvent<HTMLDivElement>,
+  editor: CustomEditor
+) => {
+  event.preventDefault();
+  
+  // Get HTML content from clipboard
+  const html = event.clipboardData.getData('text/html');
+  const text = event.clipboardData.getData('text/plain');
+  
+  let content;
+  if (html) {
+    // If HTML is available, parse it to Slate nodes
+    content = deserializeHTML(html);
+  } else if (text) {
+    // If only plain text is available, convert to paragraphs
+    content = text
+      .split('\n')
+      .map(line => ({
+        type: 'paragraph',
+        children: [{ text: line }]
+      }));
+  } else {
+    // Nothing to paste
+    return;
+  }
+  
+  // Insert at the current selection
+  if (editor.selection) {
+    Transforms.insertNodes(editor, content as Node[]);
+    
+    // Run pagination after paste
+    setTimeout(() => {
+      handlePageBreaks(editor, getPageHeight());
+      updatePageNumbers(editor);
+    }, 0);
+  }
+};
+
 // Utility to check if a node overflows its container
-export const doesNodeOverflow = (editor: ReactEditor & HistoryEditor, node: Node, path: Path, pageHeight: number): boolean => {
+export const doesNodeOverflow = (
+  editor: ReactEditor & HistoryEditor, 
+  node: Node, 
+  path: Path, 
+  pageHeight: number
+): boolean => {
   try {
     if (!pageHeight) return false;
     
@@ -39,9 +214,27 @@ export const doesNodeOverflow = (editor: ReactEditor & HistoryEditor, node: Node
   }
 };
 
+// Get the page height from CSS variables
+export const getPageHeight = (): number => {
+  const heightVar = getComputedStyle(document.documentElement).getPropertyValue('--page-height');
+  if (!heightVar) return 792; // Default to US Letter height in pixels
+  
+  // Parse the CSS variable value
+  let height: number;
+  if (heightVar.includes('mm')) {
+    height = parseFloat(heightVar) * 3.7795275591; // mm to px
+  } else if (heightVar.includes('in')) {
+    height = parseFloat(heightVar) * 96; // inches to px
+  } else {
+    height = parseFloat(heightVar);
+  }
+  
+  return height;
+};
+
 // Split paragraph at the last fitting point
 export const splitParagraphAtOverflow = (
-  editor: ReactEditor & HistoryEditor,
+  editor: CustomEditor,
   node: Element,
   path: Path,
   pageHeight: number
@@ -68,7 +261,7 @@ export const splitParagraphAtOverflow = (
       Transforms.insertNodes(editor, {
         ...node,
         children: [{ text: testText }]
-      }, { at: path });
+      } as ParagraphElement, { at: path });
       
       // Check if this node overflows
       if (doesNodeOverflow(editor, Node.get(editor, path), path, pageHeight)) {
@@ -89,7 +282,7 @@ export const splitParagraphAtOverflow = (
       Transforms.insertNodes(editor, {
         ...node,
         children: [{ text: firstPart }]
-      }, { at: path });
+      } as ParagraphElement, { at: path });
       
       // Create a new page node
       const newPagePath = Path.next(Path.parent(path));
@@ -116,8 +309,15 @@ export const splitParagraphAtOverflow = (
 };
 
 // Main function to handle page breaks
-export const handlePageBreaks = (editor: ReactEditor & HistoryEditor, pageHeight: number): boolean => {
+export const handlePageBreaks = (editor: CustomEditor, pageHeight: number): boolean => {
+  if (!pageHeight) {
+    pageHeight = getPageHeight();
+    if (!pageHeight) return false;
+  }
+
   try {
+    let changesMade = false;
+    
     // Find all page nodes
     const pages = Editor.nodes(editor, {
       match: n => Element.isElement(n) && isPageElement(n),
@@ -139,7 +339,8 @@ export const handlePageBreaks = (editor: ReactEditor & HistoryEditor, pageHeight
         if (doesNodeOverflow(editor, childNode, childPath, pageHeight)) {
           // For paragraph nodes, try to split intelligently
           if (childNode.type === 'paragraph' && splitParagraphAtOverflow(editor, childNode, childPath, pageHeight)) {
-            return true; // We made a change
+            changesMade = true;
+            break; // Break after making a change, we'll recheck on next call
           } else {
             // For non-paragraph nodes, move whole node to new page
             const nextPagePath = Path.next(pagePath);
@@ -163,13 +364,17 @@ export const handlePageBreaks = (editor: ReactEditor & HistoryEditor, pageHeight
               to: [...nextPagePath, 0],
             });
             
-            return true; // We made a change
+            changesMade = true;
+            break; // Break after making a change, we'll recheck on next call
           }
         }
       }
+      
+      // If we made changes, break the loop and let the next call handle remaining pages
+      if (changesMade) break;
     }
     
-    return false; // No changes were needed
+    return changesMade;
   } catch (error) {
     console.error('Error handling page breaks:', error);
     return false;
@@ -208,5 +413,19 @@ export const updatePageNumbers = (editor: Editor): void => {
     }
   } catch (error) {
     console.error('Error updating page numbers:', error);
+  }
+};
+
+// Handle the Ctrl+A keyboard shortcut to select all text
+export const handleSelectAll = (event: React.KeyboardEvent, editor: CustomEditor) => {
+  if ((event.ctrlKey || event.metaKey) && event.key === 'a') {
+    event.preventDefault();
+    
+    // Select all content across all pages
+    const start = Editor.start(editor, []);
+    const end = Editor.end(editor, []);
+    
+    const range = { anchor: start, focus: end };
+    Transforms.select(editor, range);
   }
 };

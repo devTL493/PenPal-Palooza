@@ -128,6 +128,7 @@ const TextStyleControls: React.FC<TextStyleControlsProps> = ({
             variant={isBold ? "default" : "outline"}
             size="sm" 
             onClick={onBoldToggle}
+            onMouseDown={handleMouseDown}
             className="w-full"
           >
             <Bold className="h-4 w-4 mr-2" />
@@ -164,6 +165,7 @@ const TextStyleControls: React.FC<TextStyleControlsProps> = ({
             variant={alignment === 'left' ? "default" : "outline"}
             size="sm"
             onClick={() => onAlignmentChange('left')}
+            onMouseDown={handleMouseDown}
             aria-label="Align left"
           >
             <AlignLeft className="h-4 w-4" />
@@ -172,6 +174,7 @@ const TextStyleControls: React.FC<TextStyleControlsProps> = ({
             variant={alignment === 'center' ? "default" : "outline"}
             size="sm"
             onClick={() => onAlignmentChange('center')}
+            onMouseDown={handleMouseDown}
             aria-label="Align center"
           >
             <AlignCenter className="h-4 w-4" />
@@ -180,6 +183,7 @@ const TextStyleControls: React.FC<TextStyleControlsProps> = ({
             variant={alignment === 'right' ? "default" : "outline"}
             size="sm"
             onClick={() => onAlignmentChange('right')}
+            onMouseDown={handleMouseDown}
             aria-label="Align right"
           >
             <AlignRight className="h-4 w-4" />
@@ -188,6 +192,7 @@ const TextStyleControls: React.FC<TextStyleControlsProps> = ({
             variant={alignment === 'justify' ? "default" : "outline"}
             size="sm"
             onClick={() => onAlignmentChange('justify')}
+            onMouseDown={handleMouseDown}
             aria-label="Justify text"
           >
             <AlignJustify className="h-4 w-4" />

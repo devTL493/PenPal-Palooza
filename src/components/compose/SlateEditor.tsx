@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { createEditor, Descendant, Node, Editor, Transforms, Element as SlateElement, Text } from 'slate';
 import { Slate, Editable, withReact, ReactEditor, useSlateStatic } from 'slate-react';
@@ -13,7 +14,13 @@ import Leaf from './editor/Leaf';
 import EditorToolbar from './editor/EditorToolbar';
 import EditorFooter from './editor/EditorFooter';
 import { useEditorState } from './editor/useEditorState';
-import { handlePageBreaks, updatePageNumbers } from './editor/PageBreakHandler';
+import { 
+  handlePageBreaks, 
+  updatePageNumbers, 
+  handleSelectAll, 
+  handlePaste, 
+  getPageHeight 
+} from './editor/PageBreakHandler';
 
 interface SlateEditorProps {
   content: string;
@@ -92,7 +99,10 @@ const SlateEditor: React.FC<SlateEditorProps> = ({
 
   // For page break calculation
   const canvasRef = useRef<HTMLDivElement>(null);
+  const editorRef = useRef<HTMLDivElement>(null);
   const [pageHeight, setPageHeight] = useState(0);
+  const [isTyping, setIsTyping] = useState(false);
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Parse content for Slate
   const [slateValue, setSlateValue] = useState<Descendant[]>(() => {
@@ -208,9 +218,19 @@ const SlateEditor: React.FC<SlateEditorProps> = ({
     );
     setPageCount(Math.max(1, pageElements.length));
     
+    // Track typing activity for toolbar visibility
+    setIsTyping(true);
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+    
+    typingTimeoutRef.current = setTimeout(() => {
+      setIsTyping(false);
+    }, 1500);
+    
     // Check for page overflows
     setTimeout(() => {
-      if (editor && ReactEditor.isFocused(editor)) {
+      if (editor) {
         const changed = handlePageBreaks(editor, pageHeight);
         if (changed) {
           updatePageNumbers(editor);
@@ -221,7 +241,9 @@ const SlateEditor: React.FC<SlateEditorProps> = ({
 
   // Toolbar visibility
   const handleMouseMove = () => {
-    setIsToolbarVisible(true);
+    if (!isTyping) {
+      setIsToolbarVisible(true);
+    }
   };
 
   // Start drag operation
@@ -315,8 +337,12 @@ const SlateEditor: React.FC<SlateEditorProps> = ({
     handleColorChange(color);
   };
 
-  // Keyboard shortcuts
+  // Enhanced keyboard shortcuts handling
   const handleKeyDown = (event: React.KeyboardEvent) => {
+    // Handle Ctrl+A for select all
+    handleSelectAll(event, editor);
+    
+    // Handle standard formatting shortcuts
     if (!event.ctrlKey && !event.metaKey) return;
     
     switch (event.key) {
@@ -336,6 +362,11 @@ const SlateEditor: React.FC<SlateEditorProps> = ({
         break;
       }
     }
+  };
+
+  // Custom paste handler
+  const handleEditorPaste = (event: React.ClipboardEvent<HTMLDivElement>) => {
+    handlePaste(event, editor);
   };
 
   // Update active formats when selection changes
@@ -389,8 +420,24 @@ const SlateEditor: React.FC<SlateEditorProps> = ({
     document.documentElement.style.setProperty('--margin', '2cm');
   }, [dimensions]);
 
+  // Escape key to show toolbar
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setIsToolbarVisible(true);
+      }
+    };
+    
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, []);
+
   return (
-    <div className="flex flex-col items-center" onMouseMove={handleMouseMove}>
+    <div 
+      className="flex flex-col items-center" 
+      onMouseMove={handleMouseMove}
+      ref={editorRef}
+    >
       <Slate
         editor={editor}
         value={slateValue}
@@ -432,7 +479,10 @@ const SlateEditor: React.FC<SlateEditorProps> = ({
         <div 
           ref={canvasRef}
           className="canvas word-processor-canvas w-full overflow-auto h-[calc(100vh-200px)]"
-          style={{ scrollSnapType: 'y mandatory' }}
+          style={{ 
+            scrollSnapType: 'y mandatory',
+            position: 'relative',
+          }}
         >
           <div 
             className="pages-container"
@@ -446,8 +496,9 @@ const SlateEditor: React.FC<SlateEditorProps> = ({
               renderElement={renderElement}
               renderLeaf={renderLeaf}
               onKeyDown={handleKeyDown}
+              onPaste={handleEditorPaste}
               spellCheck
-              className="outline-none"
+              className="outline-none cursor-text"
             />
           </div>
         </div>
