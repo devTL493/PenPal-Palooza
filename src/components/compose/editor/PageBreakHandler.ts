@@ -3,7 +3,16 @@ import { Editor, Transforms, Element, Node, Path, Range, Point } from 'slate';
 import { ReactEditor } from 'slate-react';
 import { HistoryEditor } from 'slate-history';
 import { CustomEditor, ParagraphElement } from './types';
-import { jsx } from 'slate-hyperscript';
+import { createHyperscript } from 'slate-hyperscript';
+
+// Create hyperscript helper for Slate JSX creation
+export const jsx = createHyperscript({
+  elements: {
+    paragraph: { type: 'paragraph' },
+    page: { type: 'page' }
+  },
+  marks: {}
+});
 
 // Utility to check if a block is a page
 export const isPageElement = (element: any): boolean => {
@@ -16,14 +25,14 @@ export const deserializeHTML = (html: string): Node[] => {
   const doc = parser.parseFromString(html, 'text/html');
   
   // Function to convert DOM node to Slate node
-  const convertDOMNodeToSlate = (node: Node): any => {
-    if (node.nodeType === 3) { // Text node
-      return { text: node.textContent || '' };
-    } else if (node.nodeType !== 1) { // Not an element
+  const convertDOMNodeToSlate = (domNode: globalThis.Node): any => {
+    if (domNode.nodeType === 3) { // Text node
+      return { text: domNode.textContent || '' };
+    } else if (domNode.nodeType !== 1) { // Not an element
       return null;
     }
     
-    const element = node as HTMLElement;
+    const element = domNode as HTMLElement;
     const tagName = element.tagName.toLowerCase();
     
     // Handle different HTML tags
@@ -181,7 +190,7 @@ export const handlePaste = (
 
 // Utility to check if a node overflows its container
 export const doesNodeOverflow = (
-  editor: ReactEditor & HistoryEditor, 
+  editor: CustomEditor, 
   node: Node, 
   path: Path, 
   pageHeight: number

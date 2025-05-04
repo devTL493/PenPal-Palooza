@@ -87,12 +87,12 @@ const TextStyleControls: React.FC<TextStyleControlsProps> = ({
           value={fontFamily} 
           onValueChange={onFontFamilyChange}
         >
-          <SelectTrigger id="font-family" className="w-[180px]" aria-label="Select font family">
+          <SelectTrigger id="font-family" className="w-[180px]" aria-label="Select font family" onMouseDown={handleMouseDown}>
             <SelectValue placeholder="Select font" />
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent onMouseDown={handleMouseDown}>
             {fontFamilyOptions.map(option => (
-              <SelectItem key={option.value} value={option.value}>
+              <SelectItem key={option.value} value={option.value} onMouseDown={handleMouseDown}>
                 {option.label}
               </SelectItem>
             ))}
@@ -108,12 +108,12 @@ const TextStyleControls: React.FC<TextStyleControlsProps> = ({
           value={fontSize} 
           onValueChange={onFontSizeChange}
         >
-          <SelectTrigger id="font-size" className="w-[180px]" aria-label="Select font size">
+          <SelectTrigger id="font-size" className="w-[180px]" aria-label="Select font size" onMouseDown={handleMouseDown}>
             <SelectValue placeholder="Select size" />
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent onMouseDown={handleMouseDown}>
             {fontSizeOptions.map(option => (
-              <SelectItem key={option.value} value={option.value}>
+              <SelectItem key={option.value} value={option.value} onMouseDown={handleMouseDown}>
                 {option.label}
               </SelectItem>
             ))}
@@ -145,12 +145,12 @@ const TextStyleControls: React.FC<TextStyleControlsProps> = ({
           value={lineSpacing} 
           onValueChange={onLineSpacingChange}
         >
-          <SelectTrigger id="line-spacing" className="w-[180px]" aria-label="Select line spacing">
+          <SelectTrigger id="line-spacing" className="w-[180px]" aria-label="Select line spacing" onMouseDown={handleMouseDown}>
             <SelectValue placeholder="Select spacing" />
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent onMouseDown={handleMouseDown}>
             {lineSpacingOptions.map(option => (
-              <SelectItem key={option.value} value={option.value}>
+              <SelectItem key={option.value} value={option.value} onMouseDown={handleMouseDown}>
                 {option.label}
               </SelectItem>
             ))}

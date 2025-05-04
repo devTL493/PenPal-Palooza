@@ -64,21 +64,21 @@ const ColorPickerPopover: React.FC<ColorPickerPopoverProps> = ({
   // Flatten color palette for the grid 
   const flattenedPalette = Object.values(colorPalette).flat();
   
-  // Handle color input change
-  const handleColorChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setCustomColor(e.target.value);
+  // Handle color input change and apply immediately
+  const handleColorInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const color = e.target.value;
+    setCustomColor(color);
+    handleAddCustomColor(color); // Apply the color immediately
   };
   
-  // Handle custom color submission
-  const handleAddCustomColor = () => {
-    onAddCustomColor(customColor);
+  // Handle custom color submission - now applies immediately
+  const handleAddCustomColor = (color: string) => {
+    onAddCustomColor(color);
     
     // Save to localStorage
-    const updatedColors = [customColor, ...allRecentColors.filter(c => c !== customColor)].slice(0, 3);
+    const updatedColors = [color, ...allRecentColors.filter(c => c !== color)].slice(0, 3);
     localStorage.setItem('recentTextColors', JSON.stringify(updatedColors));
     setLocalRecentColors(updatedColors);
-    
-    setColorPickerOpen(false);
   };
   
   // Handle eyedropper if supported by the browser
@@ -90,6 +90,7 @@ const ColorPickerPopover: React.FC<ColorPickerPopoverProps> = ({
         const result = await eyeDropper.open();
         if (result.sRGBHex) {
           setCustomColor(result.sRGBHex);
+          handleAddCustomColor(result.sRGBHex); // Apply immediately
         }
       } catch (e) {
         console.error('Error using eyedropper:', e);
@@ -100,9 +101,15 @@ const ColorPickerPopover: React.FC<ColorPickerPopoverProps> = ({
   };
   
   // Remove text formatting
-  const handleRemoveFormatting = () => {
+  const handleRemoveFormatting = (e: React.MouseEvent) => {
+    e.preventDefault(); // Prevent focus loss
     applyFormatting('removeFormat', null);
     setColorPickerOpen(false);
+  };
+
+  // Prevent mouse down from stealing focus
+  const handleMouseDown = (e: React.MouseEvent) => {
+    e.preventDefault();
   };
 
   return (
@@ -113,6 +120,7 @@ const ColorPickerPopover: React.FC<ColorPickerPopoverProps> = ({
           size="sm"
           disabled={!selectionRange}
           className="relative"
+          onMouseDown={handleMouseDown}
         >
           <Palette className="h-4 w-4 mr-2" />
           Text Color
@@ -123,13 +131,14 @@ const ColorPickerPopover: React.FC<ColorPickerPopoverProps> = ({
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-96 p-0 color-picker !overflow-visible" align="start">
-        <div className="p-3 space-y-4">
+        <div className="p-3 space-y-4" onMouseDown={handleMouseDown}>
           <div className="flex justify-between items-center mb-2">
             <h3 className="font-medium">Text Color</h3>
             <Button 
               variant="ghost" 
               size="sm"
               onClick={() => setColorPickerOpen(false)}
+              onMouseDown={handleMouseDown}
               className="h-8 w-8 p-0"
             >
               <X className="h-4 w-4" />
@@ -142,6 +151,7 @@ const ColorPickerPopover: React.FC<ColorPickerPopoverProps> = ({
               variant="outline"
               size="sm"
               onClick={handleRemoveFormatting}
+              onMouseDown={handleMouseDown}
               className="w-full justify-start"
             >
               <div className="w-4 h-4 mr-2 border rounded flex items-center justify-center">
@@ -160,6 +170,7 @@ const ColorPickerPopover: React.FC<ColorPickerPopoverProps> = ({
                   className="w-7 h-7 rounded hover:scale-110 transition-transform border"
                   style={{ background: color }}
                   onClick={() => applyFormatting('color', color)}
+                  onMouseDown={handleMouseDown}
                   title={color}
                   type="button"
                   aria-label={`Color ${color}`}
@@ -180,6 +191,7 @@ const ColorPickerPopover: React.FC<ColorPickerPopoverProps> = ({
                   className="w-8 h-8 rounded border hover:scale-110 transition-transform"
                   style={{ background: color }}
                   onClick={() => applyFormatting('color', color)}
+                  onMouseDown={handleMouseDown}
                   title="Recent custom color"
                   aria-label={`Recent color ${color}`}
                   type="button"
@@ -194,14 +206,16 @@ const ColorPickerPopover: React.FC<ColorPickerPopoverProps> = ({
                       htmlFor="color-picker-input" 
                       className="w-8 h-8 rounded border flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer"
                       title="Add Custom Color"
+                      onMouseDown={handleMouseDown}
                     >
                       <Plus className="h-4 w-4" />
                       <input
                         id="color-picker-input"
                         type="color"
                         value={customColor}
-                        onChange={handleColorChange}
+                        onChange={handleColorInputChange}
                         className="sr-only"
+                        onMouseDown={handleMouseDown}
                       />
                     </label>
                   </PopoverTrigger>
@@ -220,6 +234,7 @@ const ColorPickerPopover: React.FC<ColorPickerPopoverProps> = ({
                   <button 
                     className="w-8 h-8 rounded border flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-800"
                     onClick={handleEyedropper}
+                    onMouseDown={handleMouseDown}
                     title="Pick Color from Screen"
                     aria-label="Pick color from screen"
                     type="button"
@@ -240,14 +255,9 @@ const ColorPickerPopover: React.FC<ColorPickerPopoverProps> = ({
                       value={customColor}
                       onChange={(e) => setCustomColor(e.target.value)}
                       className="px-2 py-1 text-sm border rounded w-20"
+                      onMouseDown={handleMouseDown}
+                      onBlur={(e) => handleAddCustomColor(e.target.value)}
                     />
-                    <Button 
-                      size="sm" 
-                      className="ml-2" 
-                      onClick={handleAddCustomColor}
-                    >
-                      Apply
-                    </Button>
                   </div>
                 </div>
               </div>
