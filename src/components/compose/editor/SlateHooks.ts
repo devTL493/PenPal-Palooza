@@ -1,6 +1,5 @@
 
-import { useMemo, useState, useCallback } from 'react';
-import { Editor } from 'slate';
+import { useState, useCallback, useMemo } from 'react';
 import { useSelectionHandling } from './useSelectionHandling';
 import { useColorHandling } from './useColorHandling';
 import { usePaginationHandling } from './usePaginationHandling';
@@ -14,10 +13,18 @@ export function useSlateEditor(editor: CustomEditor, pageHeight: number) {
   // Track typing state
   const [isTyping, setIsTyping] = useState(false);
 
+  // Zoom state
+  const [zoom, setZoom] = useState(100);
+
   // Get all the necessary editor utilities
   const selectionUtils = useSelectionHandling(editor);
   const colorUtils = useColorHandling(editor);
   const paginationUtils = usePaginationHandling(editor, pageHeight);
+  
+  // Handle zoom change
+  const handleZoomChange = useCallback((newZoom: number) => {
+    setZoom(Math.min(Math.max(50, newZoom), 200));
+  }, []);
   
   // Handle paste events with pagination
   const handlePasteWithPagination = useCallback((event: React.ClipboardEvent) => {
@@ -29,7 +36,7 @@ export function useSlateEditor(editor: CustomEditor, pageHeight: number) {
   }, [paginationUtils]);
   
   // Enhanced keyboard handler
-  const handleKeyDown = (event: React.KeyboardEvent) => {
+  const handleKeyDown = useCallback((event: React.KeyboardEvent) => {
     // Handle Ctrl+A for select all
     if ((event.ctrlKey || event.metaKey) && event.key === 'a') {
       event.preventDefault();
@@ -72,12 +79,12 @@ export function useSlateEditor(editor: CustomEditor, pageHeight: number) {
         }
       }
     }
-  };
+  }, [editor, selectionUtils, paginationUtils]);
 
   // Prevent losing focus when interacting with popover controls
-  const handleMouseDown = (e: React.MouseEvent) => {
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
-  };
+  }, []);
 
   return {
     // Selection utilities
@@ -98,6 +105,10 @@ export function useSlateEditor(editor: CustomEditor, pageHeight: number) {
     // Typing state
     isTyping,
     setIsTyping,
+    
+    // Zoom state and handler
+    zoom,
+    handleZoomChange,
     
     // Enhanced keyboard handler
     handleKeyDown,

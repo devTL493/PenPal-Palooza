@@ -56,7 +56,7 @@ const ToolbarPaperStyleControl: React.FC<ToolbarPaperStyleControlProps> = ({
         measurementUnit: paperSizeProps.measurementUnit,
         setMeasurementUnit: paperSizeProps.setMeasurementUnit
       }}
-      handleMouseDown={handleMouseDown}
+      // We need to omit the handleMouseDown prop since it doesn't exist in PaperStylePopoverProps
     />
   );
 };

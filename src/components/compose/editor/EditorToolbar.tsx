@@ -7,6 +7,7 @@ import ToolbarFormatControls from './toolbar/ToolbarFormatControls';
 import ToolbarTextStyleControl from './toolbar/ToolbarTextStyleControl';
 import ToolbarColorPickerControl from './toolbar/ToolbarColorPickerControl';
 import ToolbarPaperStyleControl from './toolbar/ToolbarPaperStyleControl';
+import ToolbarDragControl from './toolbar/ToolbarDragControl';
 import { LetterStyle } from '@/types/letter';
 import { ColorOption } from '@/types/letter';
 import { PaperSizeOption } from '@/hooks/usePaperStyle';
