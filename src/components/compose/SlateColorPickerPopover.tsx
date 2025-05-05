@@ -1,11 +1,16 @@
 
+/**
+ * Color picker popover component for the SlateJS editor
+ * Provides a Radix UI popover with color palette, recent colors, and custom color input
+ * Uses auto-flipping placement and applies colors immediately on selection
+ */
 import React from 'react';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import { Palette, X } from 'lucide-react';
 import { ColorOption } from '@/types/letter';
 
-// Import our new components
+// Import our components
 import ColorPalette from './colorPicker/ColorPalette';
 import NoColorButton from './colorPicker/NoColorButton';
 import CustomColorInput from './colorPicker/CustomColorInput';
@@ -53,7 +58,14 @@ const SlateColorPickerPopover: React.FC<SlateColorPickerPopoverProps> = ({
           ></span>
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-80 p-3 color-picker !overflow-visible" align="start">
+      <PopoverContent 
+        className="w-80 p-3 color-picker !overflow-visible" 
+        align="start"
+        side="bottom"
+        sideOffset={4}
+        collisionPadding={8}
+        avoidCollisions
+      >
         <div className="flex justify-between items-center mb-2">
           <h3 className="font-medium">Text Color</h3>
           <Button 

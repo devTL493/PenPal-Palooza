@@ -1,4 +1,8 @@
 
+/**
+ * Toolbar control for color selection
+ * Wraps the SlateColorPickerPopover component
+ */
 import React from 'react';
 import SlateColorPickerPopover from '../../SlateColorPickerPopover';
 import { ColorOption } from '@/types/letter';

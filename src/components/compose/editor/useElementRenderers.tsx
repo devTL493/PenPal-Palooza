@@ -1,8 +1,11 @@
 
+/**
+ * Element rendering hooks for SlateJS editor
+ * Provides renderers for custom elements like pages and paragraphs
+ */
 import { useCallback } from 'react';
 import { DefaultElement, PageElement } from './Elements';
 import { LetterStyle } from '@/types/letter';
-import Leaf from './Leaf';
 
 interface UseElementRenderersProps {
   letterStyle: LetterStyle;
@@ -37,3 +40,34 @@ export function useElementRenderers({ letterStyle, dimensions }: UseElementRende
     renderLeaf
   };
 }
+
+// Simple leaf component for text formatting
+const Leaf = (props: any) => {
+  let { attributes, children, leaf } = props;
+
+  if (leaf.bold) {
+    children = <strong>{children}</strong>;
+  }
+
+  if (leaf.italic) {
+    children = <em>{children}</em>;
+  }
+
+  if (leaf.underline) {
+    children = <u>{children}</u>;
+  }
+
+  if (leaf.color) {
+    children = <span style={{ color: leaf.color }}>{children}</span>;
+  }
+
+  if (leaf.fontFamily) {
+    children = <span style={{ fontFamily: leaf.fontFamily }}>{children}</span>;
+  }
+
+  if (leaf.fontSize) {
+    children = <span style={{ fontSize: leaf.fontSize }}>{children}</span>;
+  }
+
+  return <span {...attributes}>{children}</span>;
+};

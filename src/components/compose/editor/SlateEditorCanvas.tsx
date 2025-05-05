@@ -1,7 +1,10 @@
 
+/**
+ * Core canvas component for the SlateJS editor
+ * Handles rendering the editable content with page-snap scrolling
+ */
 import React, { useRef } from 'react';
 import { Editable } from 'slate-react';
-import { Descendant } from 'slate';
 
 interface SlateEditorCanvasProps {
   renderElement: (props: any) => JSX.Element;

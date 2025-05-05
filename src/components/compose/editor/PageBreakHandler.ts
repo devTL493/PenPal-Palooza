@@ -1,7 +1,11 @@
 
-import { Editor, Transforms, Element, Node, Path, Range, Point } from 'slate';
+/**
+ * Page break and pagination handler for SlateJS editor
+ * Provides utilities for detecting overflow, splitting content across pages,
+ * and updating page numbers
+ */
+import { Editor, Transforms, Element, Node, Path } from 'slate';
 import { ReactEditor } from 'slate-react';
-import { HistoryEditor } from 'slate-history';
 import { CustomEditor, ParagraphElement } from './types';
 import { createHyperscript } from 'slate-hyperscript';
 
@@ -16,168 +20,6 @@ export const jsx = createHyperscript({
 // Utility to check if a block is a page
 export const isPageElement = (element: any): boolean => {
   return element.type === 'page';
-};
-
-// Convert HTML text to Slate nodes
-export const deserializeHTML = (html: string): Node[] => {
-  const parser = new DOMParser();
-  const doc = parser.parseFromString(html, 'text/html');
-  
-  // Function to convert DOM node to Slate node
-  const convertDOMNodeToSlate = (domNode: globalThis.Node): any => {
-    if (domNode.nodeType === 3) { // Text node
-      return { text: domNode.textContent || '' };
-    } else if (domNode.nodeType !== 1) { // Not an element
-      return null;
-    }
-    
-    const element = domNode as HTMLElement;
-    const tagName = element.tagName.toLowerCase();
-    
-    // Handle different HTML tags
-    if (tagName === 'p') {
-      // Create paragraph with children
-      const children = Array.from(element.childNodes)
-        .map(convertDOMNodeToSlate)
-        .filter(Boolean);
-      
-      return {
-        type: 'paragraph',
-        children: children.length ? children : [{ text: '' }]
-      };
-    } else if (['b', 'strong'].includes(tagName)) {
-      // Bold text
-      return {
-        text: element.textContent || '',
-        bold: true
-      };
-    } else if (['i', 'em'].includes(tagName)) {
-      // Italic text
-      return {
-        text: element.textContent || '',
-        italic: true
-      };
-    } else if (tagName === 'u') {
-      // Underline text
-      return {
-        text: element.textContent || '',
-        underline: true
-      };
-    } else if (tagName === 'span') {
-      // Handle span with style attributes
-      const style = element.getAttribute('style') || '';
-      const colorMatch = style.match(/color:\s*([^;]+)/i);
-      
-      if (colorMatch) {
-        return {
-          text: element.textContent || '',
-          color: colorMatch[1]
-        };
-      }
-      
-      return { text: element.textContent || '' };
-    } else if (tagName === 'div' || tagName === 'body') {
-      // Flatten divs into paragraphs
-      const paragraphs: any[] = [];
-      let currentTextNodes: any[] = [];
-      
-      Array.from(element.childNodes).forEach(child => {
-        const converted = convertDOMNodeToSlate(child as globalThis.Node);
-        
-        if (converted) {
-          if (Array.isArray(converted)) {
-            // Flatten array
-            converted.forEach(item => {
-              if (item.type === 'paragraph') {
-                // If we have accumulated text nodes, create a paragraph
-                if (currentTextNodes.length > 0) {
-                  paragraphs.push({
-                    type: 'paragraph',
-                    children: currentTextNodes
-                  });
-                  currentTextNodes = [];
-                }
-                paragraphs.push(item);
-              } else {
-                currentTextNodes.push(item);
-              }
-            });
-          } else if (converted.type === 'paragraph') {
-            // If we have accumulated text nodes, create a paragraph
-            if (currentTextNodes.length > 0) {
-              paragraphs.push({
-                type: 'paragraph',
-                children: currentTextNodes
-              });
-              currentTextNodes = [];
-            }
-            paragraphs.push(converted);
-          } else {
-            currentTextNodes.push(converted);
-          }
-        }
-      });
-      
-      // Handle any remaining text nodes
-      if (currentTextNodes.length > 0) {
-        paragraphs.push({
-          type: 'paragraph',
-          children: currentTextNodes
-        });
-      }
-      
-      return paragraphs.length ? paragraphs : [{ type: 'paragraph', children: [{ text: '' }] }];
-    }
-    
-    // Default to returning the text content
-    return { text: element.textContent || '' };
-  };
-  
-  // Start conversion from body
-  const result = convertDOMNodeToSlate(doc.body);
-  
-  // Ensure we return an array of nodes
-  return Array.isArray(result) ? result : [result];
-};
-
-// Custom paste handler
-export const handlePaste = (
-  event: React.ClipboardEvent<HTMLDivElement>,
-  editor: CustomEditor
-) => {
-  event.preventDefault();
-  
-  // Get HTML content from clipboard
-  const html = event.clipboardData.getData('text/html');
-  const text = event.clipboardData.getData('text/plain');
-  
-  let content;
-  if (html) {
-    // If HTML is available, parse it to Slate nodes
-    content = deserializeHTML(html);
-  } else if (text) {
-    // If only plain text is available, convert to paragraphs
-    content = text
-      .split('\n')
-      .map(line => ({
-        type: 'paragraph',
-        children: [{ text: line }]
-      }));
-  } else {
-    // Nothing to paste
-    return;
-  }
-  
-  // Insert at the current selection
-  if (editor.selection) {
-    Transforms.insertNodes(editor, content as Node[]);
-    
-    // Run pagination after paste
-    setTimeout(() => {
-      handlePageBreaks(editor, getPageHeight());
-      updatePageNumbers(editor);
-    }, 0);
-  }
 };
 
 // Utility to check if a node overflows its container
@@ -404,8 +246,7 @@ export const updatePageNumbers = (editor: Editor): void => {
     for (const [_, pagePath] of pages) {
       currentPage++;
       
-      // The footer is displayed using CSS, not as an actual node in the editor
-      // We'll update a data attribute on the page element
+      // Update page element with page number and count
       Transforms.setNodes(
         editor,
         { pageNumber: currentPage, pageCount: totalPages },
@@ -414,19 +255,5 @@ export const updatePageNumbers = (editor: Editor): void => {
     }
   } catch (error) {
     console.error('Error updating page numbers:', error);
-  }
-};
-
-// Handle the Ctrl+A keyboard shortcut to select all text
-export const handleSelectAll = (event: React.KeyboardEvent, editor: CustomEditor) => {
-  if ((event.ctrlKey || event.metaKey) && event.key === 'a') {
-    event.preventDefault();
-    
-    // Select all content across all pages
-    const start = Editor.start(editor, []);
-    const end = Editor.end(editor, []);
-    
-    const range = { anchor: start, focus: end };
-    Transforms.select(editor, range);
   }
 };

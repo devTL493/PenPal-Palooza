@@ -1,6 +1,9 @@
 
+/**
+ * Hook for handling color selection in the SlateJS editor
+ * Manages recent colors, color picker state, and color application
+ */
 import { useCallback, useState, useEffect } from 'react';
-import { Editor } from 'slate';
 import { CustomEditor } from './types';
 
 export function useColorHandling(editor: CustomEditor) {
@@ -19,10 +22,9 @@ export function useColorHandling(editor: CustomEditor) {
     }
   }, []);
   
-  // Handle color change
+  // Handle color change - applies immediately
   const handleColorChange = useCallback((color: string) => {
     // Apply the color to the selected text
-    // Using editor.addMark for consistency with other formatting operations
     editor.addMark('color', color);
     
     // Update recent colors

@@ -1,18 +1,20 @@
 
-import { useState, useCallback, useMemo } from 'react';
+/**
+ * Core editor hooks for the SlateJS editor
+ * Provides unified selection, color handling, pagination, and keyboard shortcuts
+ */
+import { useState, useCallback } from 'react';
+import { Editor, Transforms } from 'slate';
 import { useSelectionHandling } from './useSelectionHandling';
 import { useColorHandling } from './useColorHandling';
 import { usePaginationHandling } from './usePaginationHandling';
 import { CustomEditor } from './types';
 
 export function useSlateEditor(editor: CustomEditor, pageHeight: number) {
-  // Popovers for additional formatting options
+  // Popovers for formatting options
   const [stylePopoverOpen, setStylePopoverOpen] = useState(false);
   const [paperStylePopoverOpen, setPaperStylePopoverOpen] = useState(false);
   
-  // Track typing state
-  const [isTyping, setIsTyping] = useState(false);
-
   // Zoom state
   const [zoom, setZoom] = useState(100);
 
@@ -26,21 +28,17 @@ export function useSlateEditor(editor: CustomEditor, pageHeight: number) {
     setZoom(Math.min(Math.max(50, newZoom), 200));
   }, []);
   
-  // Handle paste events with pagination
-  const handlePasteWithPagination = useCallback((event: React.ClipboardEvent) => {
-    // Default paste handling will be done by Slate
-    // After paste operation, check pagination
-    setTimeout(() => {
-      paginationUtils.paginateContent();
-    }, 0);
-  }, [paginationUtils]);
-  
-  // Enhanced keyboard handler
+  // Enhanced keyboard handler with standardized shortcuts
   const handleKeyDown = useCallback((event: React.KeyboardEvent) => {
     // Handle Ctrl+A for select all
     if ((event.ctrlKey || event.metaKey) && event.key === 'a') {
       event.preventDefault();
-      selectionUtils.handleSelectAll();
+      const start = Editor.start(editor, []);
+      const end = Editor.end(editor, []);
+      Transforms.select(editor, {
+        anchor: start,
+        focus: end,
+      });
       return;
     }
     
@@ -62,26 +60,11 @@ export function useSlateEditor(editor: CustomEditor, pageHeight: number) {
           editor.addMark('underline', true);
           break;
         }
-        case 'c': {
-          // Let the browser handle copy
-          break;
-        }
-        case 'v': {
-          // Let the browser handle paste, then check pagination
-          setTimeout(() => {
-            paginationUtils.paginateContent();
-          }, 0);
-          break;
-        }
-        case 'x': {
-          // Let the browser handle cut
-          break;
-        }
       }
     }
-  }, [editor, selectionUtils, paginationUtils]);
+  }, [editor]);
 
-  // Prevent losing focus when interacting with popover controls
+  // Prevent losing focus when interacting with popovers
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
   }, []);
@@ -102,19 +85,12 @@ export function useSlateEditor(editor: CustomEditor, pageHeight: number) {
     paperStylePopoverOpen,
     setPaperStylePopoverOpen,
     
-    // Typing state
-    isTyping,
-    setIsTyping,
-    
     // Zoom state and handler
     zoom,
     handleZoomChange,
     
     // Enhanced keyboard handler
     handleKeyDown,
-    
-    // Paste handler with pagination
-    handlePasteWithPagination,
     
     // Mouse down handler
     handleMouseDown

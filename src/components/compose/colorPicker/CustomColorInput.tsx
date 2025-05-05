@@ -1,4 +1,8 @@
 
+/**
+ * Custom color input component with color picker and eyedropper
+ * Allows direct hex input and color selection
+ */
 import React, { useState } from 'react';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Palette, Plus } from 'lucide-react';
@@ -18,7 +22,7 @@ const CustomColorInput: React.FC<CustomColorInputProps> = ({
 }) => {
   const [customColor, setCustomColor] = useState(initialColor);
 
-  // Handle color input change
+  // Handle color input change - apply immediately
   const handleColorInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const color = e.target.value;
     setCustomColor(color);
@@ -95,10 +99,7 @@ const CustomColorInput: React.FC<CustomColorInputProps> = ({
         <input
           type="text"
           value={customColor}
-          onChange={(e) => {
-            setCustomColor(e.target.value);
-            // Don't apply text color immediately on text input to prevent invalid colors
-          }}
+          onChange={(e) => setCustomColor(e.target.value)}
           className="px-2 py-1 text-sm border rounded w-20"
           onKeyDown={(e) => {
             if (e.key === 'Enter') {
@@ -106,6 +107,7 @@ const CustomColorInput: React.FC<CustomColorInputProps> = ({
             }
           }}
           onBlur={() => onColorChange(customColor)}
+          onMouseDown={handleMouseDown}
         />
       </div>
     </div>

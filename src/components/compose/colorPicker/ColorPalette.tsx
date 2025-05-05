@@ -1,4 +1,8 @@
 
+/**
+ * Simple color palette grid component
+ * Renders a grid of color swatches with hover effects
+ */
 import React from 'react';
 
 interface ColorPaletteProps {

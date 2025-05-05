@@ -1,4 +1,9 @@
 
+/**
+ * Hook for handling page break pagination in the SlateJS editor
+ * Provides unified pagination logic that splits content across pages
+ * based on overflow detection
+ */
 import { useCallback } from 'react';
 import { handlePageBreaks, updatePageNumbers } from './PageBreakHandler';
 import { CustomEditor } from './types';
@@ -18,10 +23,8 @@ export function usePaginationHandling(editor: CustomEditor, pageHeight: number) 
   
   // Handle paste event with pagination
   const handlePasteWithPagination = useCallback((event: React.ClipboardEvent<HTMLDivElement>) => {
-    // Do not prevent the default paste behavior
-    // Let Slate handle the paste natively
-    
-    // Run pagination after the paste is processed
+    // Allow native paste behavior
+    // Pagination will run after paste is processed
     setTimeout(() => {
       paginateContent();
     }, 200);

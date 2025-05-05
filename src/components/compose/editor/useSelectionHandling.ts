@@ -1,4 +1,8 @@
 
+/**
+ * Hook for managing text selection in the SlateJS editor
+ * Provides utilities for saving, restoring, and manipulating selection
+ */
 import { useCallback, useState } from 'react';
 import { Editor, Transforms, Range, Path, Point } from 'slate';
 import { CustomEditor } from './types';
@@ -27,7 +31,6 @@ export function useSelectionHandling(editor: CustomEditor) {
   // Handler for selection-preserving mouse events on formatting buttons
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     e.preventDefault(); // Prevent losing focus or selection
-    e.stopPropagation(); // Stop event from bubbling up
   }, []);
   
   // Handle "Select All" keyboard shortcut
