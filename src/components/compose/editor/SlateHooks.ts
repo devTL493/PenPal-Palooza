@@ -74,6 +74,11 @@ export function useSlateEditor(editor: CustomEditor, pageHeight: number) {
     }
   };
 
+  // Prevent losing focus when interacting with popover controls
+  const handleMouseDown = (e: React.MouseEvent) => {
+    e.preventDefault();
+  };
+
   return {
     // Selection utilities
     ...selectionUtils,
@@ -98,6 +103,9 @@ export function useSlateEditor(editor: CustomEditor, pageHeight: number) {
     handleKeyDown,
     
     // Paste handler with pagination
-    handlePasteWithPagination
+    handlePasteWithPagination,
+    
+    // Mouse down handler
+    handleMouseDown
   };
 }

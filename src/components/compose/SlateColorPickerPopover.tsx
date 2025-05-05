@@ -20,6 +20,7 @@ interface SlateColorPickerPopoverProps {
   onAddCustomColor: (color: string) => void;
   recentColors: string[];
   colorOptions: ColorOption[];
+  handleMouseDown?: (e: React.MouseEvent) => void;
 }
 
 const SlateColorPickerPopover: React.FC<SlateColorPickerPopoverProps> = ({
@@ -29,15 +30,11 @@ const SlateColorPickerPopover: React.FC<SlateColorPickerPopoverProps> = ({
   onRemoveColor,
   onAddCustomColor,
   recentColors,
-  colorOptions
+  colorOptions,
+  handleMouseDown = (e) => e.preventDefault()
 }) => {
   // Get color palette from our hook
   const { flattenedPalette } = useColorPalette();
-  
-  // Prevent blur on mouse down
-  const handleMouseDown = (e: React.MouseEvent) => {
-    e.preventDefault();
-  };
 
   return (
     <Popover open={colorPickerOpen} onOpenChange={setColorPickerOpen}>
