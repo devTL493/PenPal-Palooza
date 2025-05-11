@@ -51,8 +51,9 @@ export function useSlateEditorCore({
   const [isTyping, setIsTyping] = useState(false);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
-  // Pagination tracking
-  const paginationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  // Prevent pagination recursion
+  const isPaginatingRef = useRef(false);
+  const isInsideChangeHandlerRef = useRef(false);
 
   // Create a Slate editor object that won't change across renders
   const editor = useMemo(() => {
@@ -64,47 +65,40 @@ export function useSlateEditorCore({
     e.insertBreak = () => {
       // First call the original insertBreak
       insertBreak();
-      
-      // Then schedule pagination
-      if (paginationTimeoutRef.current) {
-        clearTimeout(paginationTimeoutRef.current);
-      }
-      
-      paginationTimeoutRef.current = setTimeout(() => {
-        triggerPagination();
-      }, 0);
     };
     
     e.insertText = (text) => {
       // Call the original insertText
       insertText(text);
-      
-      // Schedule pagination only on substantial text changes
-      if (text && text.length > 5) {
-        if (paginationTimeoutRef.current) {
-          clearTimeout(paginationTimeoutRef.current);
-        }
-        
-        paginationTimeoutRef.current = setTimeout(() => {
-          triggerPagination();
-        }, 300);
-      }
     };
 
     return e;
   }, []);
   
-  // Function to trigger pagination
+  // Function to trigger pagination safely
   const triggerPagination = useCallback(() => {
-    if (editor && pageHeight > 0) {
-      // Import these functions dynamically to avoid circular dependencies
-      import('./PageBreakHandler').then(({ handlePageBreaks, updatePageNumbers }) => {
+    if (!editor || pageHeight <= 0 || isPaginatingRef.current || isInsideChangeHandlerRef.current) {
+      return;
+    }
+    
+    isPaginatingRef.current = true;
+    
+    // Import these functions dynamically to avoid circular dependencies
+    import('./PageBreakHandler').then(({ handlePageBreaks, updatePageNumbers }) => {
+      try {
         const changed = handlePageBreaks(editor, pageHeight);
         if (changed) {
           updatePageNumbers(editor);
         }
-      });
-    }
+      } catch (error) {
+        console.error('Error in pagination:', error);
+      } finally {
+        isPaginatingRef.current = false;
+      }
+    }).catch(error => {
+      console.error('Failed to import PageBreakHandler:', error);
+      isPaginatingRef.current = false;
+    });
   }, [editor, pageHeight]);
 
   // Calculate page height once dimensions are available
@@ -137,7 +131,8 @@ export function useSlateEditorCore({
   }, [dimensions]);
 
   // Handle value changes
-  const handleChange = (newValue: Descendant[]) => {
+  const handleChange = useCallback((newValue: Descendant[]) => {
+    isInsideChangeHandlerRef.current = true;
     setSlateValue(newValue);
     
     // Convert Slate value to string for external state
@@ -170,16 +165,21 @@ export function useSlateEditorCore({
     typingTimeoutRef.current = setTimeout(() => {
       setIsTyping(false);
       
-      // Trigger pagination when typing stops
-      triggerPagination();
+      // Only trigger pagination when typing stops and we're not already paginating
+      if (!isPaginatingRef.current) {
+        setTimeout(() => {
+          triggerPagination();
+        }, 100);
+      }
     }, 1000);
-  };
+    
+    isInsideChangeHandlerRef.current = false;
+  }, [handleAutoSave, setContent, triggerPagination]);
 
   // Clean up timeouts on unmount
   useEffect(() => {
     return () => {
       if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
-      if (paginationTimeoutRef.current) clearTimeout(paginationTimeoutRef.current);
     };
   }, []);
 
@@ -199,6 +199,7 @@ export function useSlateEditorCore({
     isTyping,
     setIsTyping,
     typingTimeoutRef,
-    triggerPagination
+    triggerPagination,
+    isPaginatingRef
   };
 }

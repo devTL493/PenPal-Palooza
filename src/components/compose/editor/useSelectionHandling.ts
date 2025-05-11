@@ -3,12 +3,14 @@
  * Hook for managing text selection in the SlateJS editor
  * Provides utilities for saving, restoring, and manipulating selection
  */
-import { useCallback, useState } from 'react';
+import { useCallback, useState, useRef } from 'react';
 import { Editor, Transforms, Range, Path, Point } from 'slate';
 import { CustomEditor } from './types';
 
 export function useSelectionHandling(editor: CustomEditor) {
   const [savedSelection, setSavedSelection] = useState<Range | null>(null);
+  // Track if we're preventing events to avoid double handling
+  const preventNextSelectionChangeRef = useRef<boolean>(false);
   
   // Save the current editor selection
   const saveCurrentSelection = useCallback(() => {
@@ -31,10 +33,17 @@ export function useSelectionHandling(editor: CustomEditor) {
   // Handler for selection-preserving mouse events on formatting buttons
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     // Only prevent default for formatting buttons to avoid disrupting native selection
-    if ((e.target as HTMLElement).closest('[data-format-button]')) {
-      e.preventDefault(); // Prevent losing focus or selection only for buttons
+    const target = e.target as HTMLElement;
+    const isFormatButton = target.closest('[data-format-button]');
+    const isToolbarButton = target.closest('.toolbar-button');
+    
+    if (isFormatButton || isToolbarButton) {
+      // Save current selection before interaction
+      saveCurrentSelection();
+      // Only prevent default for format buttons to maintain selection
+      e.preventDefault();
     }
-  }, []);
+  }, [saveCurrentSelection]);
   
   // Handle "Select All" keyboard shortcut
   const handleSelectAll = useCallback(() => {
@@ -57,6 +66,10 @@ export function useSelectionHandling(editor: CustomEditor) {
     saveCurrentSelection,
     restoreSelection,
     handleMouseDown,
-    handleSelectAll
+    handleSelectAll,
+    preventNextSelectionChange: (value: boolean) => {
+      preventNextSelectionChangeRef.current = value;
+    },
+    isPreventingNextSelectionChange: () => preventNextSelectionChangeRef.current
   };
 }

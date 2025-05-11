@@ -22,6 +22,22 @@ export const isPageElement = (element: any): boolean => {
   return element.type === 'page';
 };
 
+// Utility to safely get DOM node with error handling
+const safeGetDOMNode = (
+  editor: CustomEditor,
+  node: Node,
+  fallbackValue = false
+): HTMLElement | null => {
+  try {
+    if (!ReactEditor.isReadOnly(editor)) {
+      return ReactEditor.toDOMNode(editor, node);
+    }
+  } catch (error) {
+    console.debug('DOM node access failed:', error);
+  }
+  return null;
+};
+
 // Utility to check if a node overflows its container
 export const doesNodeOverflow = (
   editor: CustomEditor, 
@@ -33,7 +49,7 @@ export const doesNodeOverflow = (
     if (!pageHeight) return false;
     
     // Get DOM node for this slate node
-    const domNode = ReactEditor.toDOMNode(editor, node);
+    const domNode = safeGetDOMNode(editor, node);
     if (!domNode) return false;
     
     // Get page element that contains this node
@@ -50,6 +66,7 @@ export const doesNodeOverflow = (
     
     // Check if bottom of node exceeds usable page height
     const relativeBottom = nodeRect.bottom - pageRect.top;
+    
     return relativeBottom > usableHeight;
   } catch (error) {
     console.error('Error checking overflow:', error);
@@ -75,6 +92,33 @@ export const getPageHeight = (): number => {
   return height;
 };
 
+// Safely find the best split point in a paragraph
+const findSplitPoint = (text: string): number => {
+  // Try to split on sentence boundaries first
+  const sentenceBoundaries = [...text.matchAll(/[.!?]\s+/g)];
+  if (sentenceBoundaries.length > 0) {
+    const lastBoundary = sentenceBoundaries[sentenceBoundaries.length - 1];
+    if (lastBoundary.index && lastBoundary.index > text.length * 0.3) {
+      return lastBoundary.index + 2; // +2 to include the period and space
+    }
+  }
+  
+  // Try to split on word boundaries
+  const words = text.split(/\s+/);
+  if (words.length > 1) {
+    // Aim for middle of paragraph to avoid tiny splits
+    const midPoint = Math.floor(words.length / 2);
+    let charCount = 0;
+    for (let i = 0; i < midPoint; i++) {
+      charCount += words[i].length + 1; // +1 for the space
+    }
+    return charCount;
+  }
+  
+  // Fallback to middle of text
+  return Math.floor(text.length / 2);
+};
+
 // Split paragraph at the last fitting point
 export const splitParagraphAtOverflow = (
   editor: CustomEditor,
@@ -86,65 +130,38 @@ export const splitParagraphAtOverflow = (
   if (node.type !== 'paragraph') return false;
   
   try {
-    // Find all line breaks
+    // Get text content of the node
     const text = Node.string(node);
-    const sentences = text.split(/(?<=\. )/); // Split on periods followed by a space
+    if (!text.trim()) return false; // Skip empty paragraphs
     
-    if (sentences.length <= 1) return false;
+    // Find a good split point
+    const splitPoint = findSplitPoint(text);
+    if (splitPoint <= 0) return false;
     
-    // Find last sentence that fits
-    let lastFittingSentence = 0;
-    let currentText = '';
+    // Split the paragraph into two parts
+    const firstPart = text.substring(0, splitPoint);
+    const secondPart = text.substring(splitPoint);
     
-    for (let i = 0; i < sentences.length; i++) {
-      const testText = currentText + sentences[i];
-      
-      // Create a temporary element to test the height
-      Transforms.delete(editor, { at: path });
-      Transforms.insertNodes(editor, {
-        ...node,
-        children: [{ text: testText }]
-      } as ParagraphElement, { at: path });
-      
-      // Check if this node overflows
-      if (doesNodeOverflow(editor, Node.get(editor, path), path, pageHeight)) {
-        break;
-      }
-      
-      currentText = testText;
-      lastFittingSentence = i;
-    }
+    if (!secondPart.trim()) return false; // No need to split if second part is empty
     
-    // If we have a split point, create two nodes
-    if (lastFittingSentence < sentences.length - 1) {
-      const firstPart = sentences.slice(0, lastFittingSentence + 1).join('');
-      const secondPart = sentences.slice(lastFittingSentence + 1).join('');
-      
-      // Update the current node with first part
-      Transforms.delete(editor, { at: path });
-      Transforms.insertNodes(editor, {
-        ...node,
-        children: [{ text: firstPart }]
-      } as ParagraphElement, { at: path });
-      
-      // Create a new page node
-      const newPagePath = Path.next(Path.parent(path));
-      Transforms.insertNodes(editor, {
-        type: 'page',
-        children: [{
-          type: 'paragraph',
-          children: [{ text: secondPart }]
-        }]
-      }, { at: newPagePath });
-      
-      // Move cursor to the beginning of the new paragraph
-      const newParagraphPath = [...newPagePath, 0];
-      Transforms.select(editor, Editor.start(editor, newParagraphPath));
-      
-      return true;
-    }
+    // Update the current node with first part
+    Transforms.delete(editor, { at: path });
+    Transforms.insertNodes(editor, {
+      ...node,
+      children: [{ text: firstPart }]
+    } as ParagraphElement, { at: path });
     
-    return false;
+    // Create a new page node with the second part
+    const newPagePath = Path.next(Path.parent(path));
+    Transforms.insertNodes(editor, {
+      type: 'page',
+      children: [{
+        type: 'paragraph',
+        children: [{ text: secondPart }]
+      }]
+    }, { at: newPagePath });
+    
+    return true;
   } catch (error) {
     console.error('Error splitting paragraph:', error);
     return false;
@@ -160,61 +177,86 @@ export const handlePageBreaks = (editor: CustomEditor, pageHeight: number): bool
 
   try {
     let changesMade = false;
+    let maxIterations = 10; // Prevent infinite loops
     
-    // Find all page nodes
-    const pages = Editor.nodes(editor, {
-      match: n => Element.isElement(n) && isPageElement(n),
-    });
-    
-    // Process each page
-    for (const [pageNode, pagePath] of pages) {
-      if (!Element.isElement(pageNode)) continue;
+    // Process until no more changes are needed or max iterations reached
+    while (maxIterations > 0) {
+      let pageChanged = false;
       
-      // Check each child of the page
-      for (let i = 0; i < pageNode.children.length; i++) {
-        const childPath = [...pagePath, i];
-        const childNode = Node.get(editor, childPath);
+      // Find all page nodes
+      const pages = Array.from(
+        Editor.nodes(editor, {
+          match: n => Element.isElement(n) && isPageElement(n),
+        })
+      );
+      
+      // Process each page
+      for (const [pageNode, pagePath] of pages) {
+        if (!Element.isElement(pageNode)) continue;
         
-        // Make sure we only work with Element nodes with children
-        if (!Element.isElement(childNode)) continue;
-        
-        // Check if this node overflows
-        if (doesNodeOverflow(editor, childNode, childPath, pageHeight)) {
-          // For paragraph nodes, try to split intelligently
-          if (childNode.type === 'paragraph' && splitParagraphAtOverflow(editor, childNode, childPath, pageHeight)) {
-            changesMade = true;
-            break; // Break after making a change, we'll recheck on next call
-          } else {
-            // For non-paragraph nodes, move whole node to new page
-            const nextPagePath = Path.next(pagePath);
+        // Check each child of the page
+        for (let i = 0; i < pageNode.children.length; i++) {
+          const childPath = [...pagePath, i];
+          
+          try {
+            const childNode = Node.get(editor, childPath);
+            if (!Element.isElement(childNode)) continue;
             
-            // Create a new page if needed
-            let newPage;
-            try {
-              newPage = Node.get(editor, nextPagePath);
-            } catch (error) {
-              // Page doesn't exist, create one
-              Transforms.insertNodes(editor, {
-                type: 'page',
-                children: []
-              }, { at: nextPagePath });
-              newPage = Node.get(editor, nextPagePath);
+            // Check if this node overflows
+            if (doesNodeOverflow(editor, childNode, childPath, pageHeight)) {
+              // For paragraph nodes, try to split intelligently
+              if (childNode.type === 'paragraph') {
+                if (splitParagraphAtOverflow(editor, childNode, childPath, pageHeight)) {
+                  pageChanged = true;
+                  changesMade = true;
+                  break; // Break after making a change, we'll recheck on next iteration
+                }
+              }
+              
+              // Move the entire node to a new page if it can't be split
+              const nextPagePath = Path.next(pagePath);
+              
+              // Create a new page if needed
+              let newPageExists = false;
+              try {
+                Node.get(editor, nextPagePath);
+                newPageExists = true;
+              } catch (error) {
+                // Page doesn't exist, create one
+                Transforms.insertNodes(editor, {
+                  type: 'page',
+                  children: []
+                }, { at: nextPagePath });
+              }
+              
+              try {
+                // Move the overflowing node to the new page
+                Transforms.moveNodes(editor, {
+                  at: childPath,
+                  to: [...nextPagePath, 0],
+                });
+                
+                pageChanged = true;
+                changesMade = true;
+                break; // Break after making a change
+              } catch (error) {
+                console.error('Error moving node to new page:', error);
+              }
             }
-            
-            // Move the overflowing node to the new page
-            Transforms.moveNodes(editor, {
-              at: childPath,
-              to: [...nextPagePath, 0],
-            });
-            
-            changesMade = true;
-            break; // Break after making a change, we'll recheck on next call
+          } catch (error) {
+            console.error('Error processing child node:', error);
+            continue;
           }
         }
+        
+        // If we made changes to this page, break the loop and continue in next iteration
+        if (pageChanged) break;
       }
       
-      // If we made changes, break the loop and let the next call handle remaining pages
-      if (changesMade) break;
+      // If no pages changed in this iteration, we're done
+      if (!pageChanged) break;
+      
+      maxIterations--;
     }
     
     return changesMade;
@@ -228,20 +270,15 @@ export const handlePageBreaks = (editor: CustomEditor, pageHeight: number): bool
 export const updatePageNumbers = (editor: Editor): void => {
   try {
     // Count pages
-    const pageCount = Editor.nodes(editor, {
-      match: n => Element.isElement(n) && isPageElement(n),
-    });
+    const pages = Array.from(
+      Editor.nodes(editor, {
+        match: n => Element.isElement(n) && isPageElement(n),
+      })
+    );
     
-    let totalPages = 0;
-    for (const _ of pageCount) {
-      totalPages++;
-    }
+    const totalPages = pages.length;
     
     // Update each page
-    const pages = Editor.nodes(editor, {
-      match: n => Element.isElement(n) && isPageElement(n),
-    });
-    
     let currentPage = 0;
     for (const [_, pagePath] of pages) {
       currentPage++;

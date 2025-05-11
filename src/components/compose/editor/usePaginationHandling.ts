@@ -4,30 +4,59 @@
  * Provides unified pagination logic that splits content across pages
  * based on overflow detection
  */
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { handlePageBreaks, updatePageNumbers } from './PageBreakHandler';
 import { CustomEditor } from './types';
 
 export function usePaginationHandling(editor: CustomEditor, pageHeight: number) {
-  // Debounced pagination to avoid performance issues during typing
-  let paginationTimeout: NodeJS.Timeout | null = null;
+  // Use ref for timeout to properly clear it
+  const paginationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  // Track if we're currently paginating to prevent recursive calls
+  const isPaginatingRef = useRef<boolean>(false);
+  // Track if pagination is requested while another is in progress
+  const paginationRequestedRef = useRef<boolean>(false);
   
   // Perform pagination and update page numbers
   const paginateContent = useCallback(() => {
-    // Clear any existing timeout to prevent multiple pagination calls
-    if (paginationTimeout) {
-      clearTimeout(paginationTimeout);
+    // Prevent initiating pagination if we're already paginating
+    if (isPaginatingRef.current) {
+      paginationRequestedRef.current = true;
+      return;
     }
     
-    // Set a new timeout for pagination
-    paginationTimeout = setTimeout(() => {
-      if (editor) {
-        const changed = handlePageBreaks(editor, pageHeight);
-        if (changed) {
-          updatePageNumbers(editor);
+    // Clear any existing timeout to prevent multiple pagination calls
+    if (paginationTimeoutRef.current) {
+      clearTimeout(paginationTimeoutRef.current);
+      paginationTimeoutRef.current = null;
+    }
+    
+    // Set a new timeout for pagination with proper debouncing
+    paginationTimeoutRef.current = setTimeout(() => {
+      if (editor && pageHeight > 0) {
+        try {
+          isPaginatingRef.current = true;
+          
+          // Only perform pagination if editor has content
+          if (editor.children.length > 0) {
+            const changed = handlePageBreaks(editor, pageHeight);
+            if (changed) {
+              updatePageNumbers(editor);
+            }
+          }
+          
+          isPaginatingRef.current = false;
+          
+          // If pagination was requested while we were paginating, run it again
+          if (paginationRequestedRef.current) {
+            paginationRequestedRef.current = false;
+            paginateContent();
+          }
+        } catch (error) {
+          console.error('Pagination error:', error);
+          isPaginatingRef.current = false;
         }
       }
-    }, 100);
+    }, 200);
   }, [editor, pageHeight]);
   
   // Handle paste event with pagination
@@ -35,42 +64,24 @@ export function usePaginationHandling(editor: CustomEditor, pageHeight: number) 
     // Allow native paste behavior
     // Pagination will run after paste is processed
     setTimeout(() => {
-      paginateContent();
-    }, 200);
+      if (!isPaginatingRef.current) {
+        paginateContent();
+      }
+    }, 300);
   }, [paginateContent]);
   
-  // Set up pagination on editor changes
+  // Clean up on unmount
   useEffect(() => {
-    // Set up the editor to paginate after content changes
-    if (editor) {
-      const { onChange } = editor;
-      editor.onChange = () => {
-        onChange();
-        
-        // Debounce the pagination to avoid excessive calculations
-        if (paginationTimeout) {
-          clearTimeout(paginationTimeout);
-        }
-        
-        paginationTimeout = setTimeout(() => {
-          const changed = handlePageBreaks(editor, pageHeight);
-          if (changed) {
-            updatePageNumbers(editor);
-          }
-        }, 300);
-      };
-    }
-    
     return () => {
-      // Clean up timeout on unmount
-      if (paginationTimeout) {
-        clearTimeout(paginationTimeout);
+      if (paginationTimeoutRef.current) {
+        clearTimeout(paginationTimeoutRef.current);
       }
     };
-  }, [editor, pageHeight]);
+  }, []);
 
   return {
     paginateContent,
-    handlePasteWithPagination
+    handlePasteWithPagination,
+    isPaginating: isPaginatingRef
   };
 }

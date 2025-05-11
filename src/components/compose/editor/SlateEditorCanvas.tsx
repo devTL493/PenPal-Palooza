@@ -3,7 +3,7 @@
  * Core canvas component for the SlateJS editor
  * Handles rendering the editable content with page-snap scrolling
  */
-import React, { useRef } from 'react';
+import React from 'react';
 import { Editable } from 'slate-react';
 
 interface SlateEditorCanvasProps {
@@ -37,7 +37,8 @@ const SlateEditorCanvas: React.FC<SlateEditorCanvasProps> = ({
         style={{
           transform: `scale(${zoom/100})`,
           transformOrigin: 'top center',
-          transition: 'transform 0.2s ease-in-out'
+          transition: 'transform 0.2s ease-in-out',
+          padding: '2rem 0'
         }}
       >
         <Editable

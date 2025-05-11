@@ -8,21 +8,35 @@ import { RenderElementProps, RenderLeafProps } from 'slate-react';
 import { CustomEditor } from './types';
 
 // Element components
-const PageElement = ({ children, pageNumber, pageCount, ...attributes }: any) => {
+const PageElement = ({ attributes, children, element, ...props }: any) => {
+  const pageNumber = element.pageNumber || 1;
+  const pageCount = element.pageCount || 1;
+  
   return (
     <div 
       {...attributes}
       className="page"
-      data-page={pageNumber || 1} 
-      data-total-pages={pageCount || 1}
+      data-page={pageNumber} 
+      data-total-pages={pageCount}
     >
       <div className="page-content">{children}</div>
+      <div className="absolute bottom-2 right-0 left-0 text-center text-xs text-gray-400">
+        Page {pageNumber} of {pageCount}
+      </div>
     </div>
   );
 };
 
 const DefaultElement = (props: RenderElementProps) => {
-  return <p {...props.attributes}>{props.children}</p>;
+  const { attributes, children, element } = props;
+  
+  // Apply alignment if specified
+  const style: React.CSSProperties = {};
+  if (element.align) {
+    style.textAlign = element.align;
+  }
+  
+  return <p style={style} {...attributes}>{children}</p>;
 };
 
 // Leaf component for text formatting
@@ -78,17 +92,13 @@ interface UseElementRenderersProps {
 export function useElementRenderers({ letterStyle, dimensions }: UseElementRenderersProps) {
   // Render each element based on its type
   const renderElement = (props: RenderElementProps) => {
-    switch (props.element.type) {
-      case 'page':
-        const pageProps = {
-          ...props,
-          pageNumber: props.element.pageNumber || 1,
-          pageCount: props.element.pageCount || 1
-        };
-        return <PageElement {...pageProps} />;
-      default:
-        return <DefaultElement {...props} />;
+    const { element } = props;
+    
+    if (element.type === 'page') {
+      return <PageElement {...props} />;
     }
+    
+    return <DefaultElement {...props} />;
   };
 
   // Render each leaf with appropriate formatting

@@ -30,19 +30,19 @@ export function useSlateEditor(editor: CustomEditor, pageHeight: number) {
   
   // Enhanced keyboard handler with standardized shortcuts
   const handleKeyDown = useCallback((event: React.KeyboardEvent) => {
-    // Allow native Ctrl+A for select all
+    // NEVER prevent default for ctrl/cmd+A (select all)
     if ((event.ctrlKey || event.metaKey) && event.key === 'a') {
-      // Let browser handle the selection, don't prevent default
+      // Let browser handle the selection
       return;
     }
     
-    // Allow native copy/paste/cut operations
+    // NEVER prevent default for ctrl/cmd+C/V/X (copy/paste/cut)
     if ((event.ctrlKey || event.metaKey) && ['c', 'v', 'x'].includes(event.key)) {
-      // Don't prevent default to allow browser to handle clipboard operations
+      // Don't prevent default for clipboard operations
       return;
     }
     
-    // Handle standard formatting shortcuts
+    // Handle formatting shortcuts only
     if (event.ctrlKey || event.metaKey) {
       switch (event.key) {
         case 'b': {
@@ -66,11 +66,8 @@ export function useSlateEditor(editor: CustomEditor, pageHeight: number) {
 
   // Prevent losing focus when interacting with popovers
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
-    // Only prevent default for toolbar buttons, not for all events
-    if ((e.target as HTMLElement).closest('.toolbar-button')) {
-      e.preventDefault();
-    }
-  }, []);
+    selectionUtils.handleMouseDown(e);
+  }, [selectionUtils]);
 
   return {
     // Selection utilities
