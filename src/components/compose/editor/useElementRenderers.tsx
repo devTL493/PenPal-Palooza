@@ -15,7 +15,7 @@ const PageElement = ({ attributes, children, element, ...props }: any) => {
   return (
     <div 
       {...attributes}
-      className="page"
+      className="page relative"
       data-page={pageNumber} 
       data-total-pages={pageCount}
     >
@@ -32,7 +32,7 @@ const DefaultElement = (props: RenderElementProps) => {
   
   // Apply alignment if specified - use type assertion to handle potential alignment property
   const style: React.CSSProperties = {};
-  if ('align' in element && element.align) {
+  if ('align' in element && typeof element.align === 'string') {
     style.textAlign = element.align;
   }
   
