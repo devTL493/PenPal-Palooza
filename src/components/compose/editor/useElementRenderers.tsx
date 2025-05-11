@@ -5,7 +5,7 @@
  */
 import React from 'react';
 import { RenderElementProps, RenderLeafProps } from 'slate-react';
-import { CustomEditor } from './types';
+import { CustomEditor, CustomElement, ParagraphElement } from './types';
 
 // Element components
 const PageElement = ({ attributes, children, element, ...props }: any) => {
@@ -30,9 +30,9 @@ const PageElement = ({ attributes, children, element, ...props }: any) => {
 const DefaultElement = (props: RenderElementProps) => {
   const { attributes, children, element } = props;
   
-  // Apply alignment if specified
+  // Apply alignment if specified - use type assertion to handle potential alignment property
   const style: React.CSSProperties = {};
-  if (element.align) {
+  if ('align' in element && element.align) {
     style.textAlign = element.align;
   }
   
