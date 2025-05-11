@@ -1,73 +1,103 @@
 
 /**
- * Element rendering hooks for SlateJS editor
- * Provides renderers for custom elements like pages and paragraphs
+ * Hook for rendering custom elements in the SlateJS editor
+ * Provides unified element and leaf rendering for the editor
  */
-import { useCallback } from 'react';
-import { DefaultElement, PageElement } from './Elements';
-import { LetterStyle } from '@/types/letter';
+import React from 'react';
+import { RenderElementProps, RenderLeafProps } from 'slate-react';
+import { CustomEditor } from './types';
+
+// Element components
+const PageElement = ({ children, pageNumber, pageCount, ...attributes }: any) => {
+  return (
+    <div 
+      {...attributes}
+      className="page"
+      data-page={pageNumber || 1} 
+      data-total-pages={pageCount || 1}
+    >
+      <div className="page-content">{children}</div>
+    </div>
+  );
+};
+
+const DefaultElement = (props: RenderElementProps) => {
+  return <p {...props.attributes}>{props.children}</p>;
+};
+
+// Leaf component for text formatting
+const Leaf = ({ attributes, children, leaf }: RenderLeafProps) => {
+  let style: React.CSSProperties = {};
+  
+  if (leaf.bold) {
+    children = <strong>{children}</strong>;
+  }
+  
+  if (leaf.italic) {
+    children = <em>{children}</em>;
+  }
+  
+  if (leaf.underline) {
+    children = <u>{children}</u>;
+  }
+  
+  if (leaf.color) {
+    style.color = leaf.color;
+  }
+  
+  if (leaf.fontFamily) {
+    style.fontFamily = leaf.fontFamily;
+  }
+  
+  if (leaf.fontSize) {
+    style.fontSize = leaf.fontSize;
+  }
+  
+  if (leaf.lineHeight) {
+    style.lineHeight = leaf.lineHeight;
+  }
+  
+  return (
+    <span {...attributes} style={style}>
+      {children}
+    </span>
+  );
+};
 
 interface UseElementRenderersProps {
-  letterStyle: LetterStyle;
-  dimensions: any;
+  letterStyle: {
+    paperStyle: string;
+    borderStyle: string;
+  };
+  dimensions: {
+    width: string | number;
+    height: string | number;
+  };
 }
 
 export function useElementRenderers({ letterStyle, dimensions }: UseElementRenderersProps) {
-  // Define custom element renderer
-  const renderElement = useCallback((props: any) => {
+  // Render each element based on its type
+  const renderElement = (props: RenderElementProps) => {
     switch (props.element.type) {
       case 'page':
         const pageProps = {
           ...props,
-          letterStyle,
-          dimensions,
-          pageNumber: props.element.pageNumber,
+          pageNumber: props.element.pageNumber || 1,
           pageCount: props.element.pageCount || 1
         };
         return <PageElement {...pageProps} />;
       default:
         return <DefaultElement {...props} />;
     }
-  }, [letterStyle, dimensions]);
+  };
 
-  // Define custom leaf renderer for text formatting
-  const renderLeaf = useCallback((props: any) => {
+  // Render each leaf with appropriate formatting
+  const renderLeaf = (props: RenderLeafProps) => {
     return <Leaf {...props} />;
-  }, []);
+  };
 
   return {
     renderElement,
     renderLeaf
   };
 }
-
-// Simple leaf component for text formatting
-const Leaf = (props: any) => {
-  let { attributes, children, leaf } = props;
-
-  if (leaf.bold) {
-    children = <strong>{children}</strong>;
-  }
-
-  if (leaf.italic) {
-    children = <em>{children}</em>;
-  }
-
-  if (leaf.underline) {
-    children = <u>{children}</u>;
-  }
-
-  if (leaf.color) {
-    children = <span style={{ color: leaf.color }}>{children}</span>;
-  }
-
-  if (leaf.fontFamily) {
-    children = <span style={{ fontFamily: leaf.fontFamily }}>{children}</span>;
-  }
-
-  if (leaf.fontSize) {
-    children = <span style={{ fontSize: leaf.fontSize }}>{children}</span>;
-  }
-
-  return <span {...attributes}>{children}</span>;
-};

@@ -30,7 +30,10 @@ export function useSelectionHandling(editor: CustomEditor) {
   
   // Handler for selection-preserving mouse events on formatting buttons
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
-    e.preventDefault(); // Prevent losing focus or selection
+    // Only prevent default for formatting buttons to avoid disrupting native selection
+    if ((e.target as HTMLElement).closest('[data-format-button]')) {
+      e.preventDefault(); // Prevent losing focus or selection only for buttons
+    }
   }, []);
   
   // Handle "Select All" keyboard shortcut

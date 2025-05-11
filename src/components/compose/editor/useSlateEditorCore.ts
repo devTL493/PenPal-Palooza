@@ -50,32 +50,62 @@ export function useSlateEditorCore({
   // Typing tracking
   const [isTyping, setIsTyping] = useState(false);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // Pagination tracking
+  const paginationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Create a Slate editor object that won't change across renders
   const editor = useMemo(() => {
     const e = withHistory(withReact(createEditor())) as CustomEditor;
     
     // Override insertBreak to handle page breaks
-    const { insertBreak } = e;
+    const { insertBreak, insertText } = e;
+    
     e.insertBreak = () => {
+      // First call the original insertBreak
       insertBreak();
       
-      // Check for page breaks after inserting a line break
-      setTimeout(() => {
-        // We'll call paginateContent from the parent component
+      // Then schedule pagination
+      if (paginationTimeoutRef.current) {
+        clearTimeout(paginationTimeoutRef.current);
+      }
+      
+      paginationTimeoutRef.current = setTimeout(() => {
+        triggerPagination();
       }, 0);
     };
-
-    // Add custom event handlers to enable copy/paste
-    const { onChange } = e;
-    e.onChange = () => {
-      if (onChange) {
-        onChange();
+    
+    e.insertText = (text) => {
+      // Call the original insertText
+      insertText(text);
+      
+      // Schedule pagination only on substantial text changes
+      if (text && text.length > 5) {
+        if (paginationTimeoutRef.current) {
+          clearTimeout(paginationTimeoutRef.current);
+        }
+        
+        paginationTimeoutRef.current = setTimeout(() => {
+          triggerPagination();
+        }, 300);
       }
     };
-    
+
     return e;
-  }, [pageHeight]);
+  }, []);
+  
+  // Function to trigger pagination
+  const triggerPagination = useCallback(() => {
+    if (editor && pageHeight > 0) {
+      // Import these functions dynamically to avoid circular dependencies
+      import('./PageBreakHandler').then(({ handlePageBreaks, updatePageNumbers }) => {
+        const changed = handlePageBreaks(editor, pageHeight);
+        if (changed) {
+          updatePageNumbers(editor);
+        }
+      });
+    }
+  }, [editor, pageHeight]);
 
   // Calculate page height once dimensions are available
   useEffect(() => {
@@ -139,8 +169,19 @@ export function useSlateEditorCore({
     
     typingTimeoutRef.current = setTimeout(() => {
       setIsTyping(false);
-    }, 1500);
+      
+      // Trigger pagination when typing stops
+      triggerPagination();
+    }, 1000);
   };
+
+  // Clean up timeouts on unmount
+  useEffect(() => {
+    return () => {
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+      if (paginationTimeoutRef.current) clearTimeout(paginationTimeoutRef.current);
+    };
+  }, []);
 
   return {
     editor,
@@ -157,6 +198,7 @@ export function useSlateEditorCore({
     setPageCount,
     isTyping,
     setIsTyping,
-    typingTimeoutRef
+    typingTimeoutRef,
+    triggerPagination
   };
 }
