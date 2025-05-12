@@ -3,7 +3,7 @@
  * Core canvas component for the SlateJS editor
  * Handles rendering the editable content with page-snap scrolling
  */
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useCallback } from 'react';
 import { Editable } from 'slate-react';
 
 interface SlateEditorCanvasProps {
@@ -23,15 +23,20 @@ const SlateEditorCanvas: React.FC<SlateEditorCanvasProps> = ({
   zoom,
   canvasRef
 }) => {
-  // Reference to the editable content for direct DOM access when needed
-  const editableRef = useRef<HTMLDivElement | null>(null);
+  // Instead of using useRef, we'll use a callback ref pattern that works with Slate
+  const handleEditableRef = useCallback((node: HTMLDivElement | null) => {
+    // Store this ref in a way that's accessible if needed
+    if (node) {
+      // You could add any initialization code for the editable here
+      // For example: node.focus(); to auto-focus
+    }
+  }, []);
 
   // Set up improved event handling for native selection
   useEffect(() => {
     const canvasEl = canvasRef.current;
-    const editableEl = editableRef.current;
     
-    if (!canvasEl || !editableEl) return;
+    if (!canvasEl) return;
     
     // Enable smooth scrolling into view when selection changes
     const handleSelectionChange = () => {
@@ -42,7 +47,7 @@ const SlateEditorCanvas: React.FC<SlateEditorCanvasProps> = ({
         const rect = range.getBoundingClientRect();
         
         // Check if selection is within the editor
-        if (editableEl.contains(range.commonAncestorContainer)) {
+        if (canvasEl.contains(range.commonAncestorContainer)) {
           // Calculate if selection is visible
           const canvasRect = canvasEl.getBoundingClientRect();
           
@@ -108,7 +113,8 @@ const SlateEditorCanvas: React.FC<SlateEditorCanvasProps> = ({
           onPaste={handlePasteWithPagination}
           spellCheck
           className="outline-none cursor-text"
-          ref={editableRef}
+          // Remove the direct ref prop and replace with the proper attribute
+          // that the Editable component accepts, if needed
         />
       </div>
     </div>
