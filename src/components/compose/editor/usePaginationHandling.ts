@@ -18,9 +18,13 @@ export function usePaginationHandling(editor: CustomEditor, pageHeight: number) 
   // Track pagination attempts to detect infinite loops
   const paginationAttemptsRef = useRef<number>(0);
   // Maximum allowed pagination attempts before forced cooldown
-  const MAX_PAGINATION_ATTEMPTS = 5;
+  const MAX_PAGINATION_ATTEMPTS = 3; // Reduced from 5 to limit cascade effect
   // Cooldown period in milliseconds
   const PAGINATION_COOLDOWN = 2000;
+  // Last change timestamp to detect rapid changes
+  const lastChangeTimestampRef = useRef<number>(0);
+  // Minimum time between pagination attempts
+  const MIN_PAGINATION_INTERVAL = 500;
   
   // Reset pagination attempts counter after cooldown period
   const resetPaginationAttempts = useCallback(() => {
@@ -29,6 +33,22 @@ export function usePaginationHandling(editor: CustomEditor, pageHeight: number) 
   
   // Perform pagination and update page numbers with safeguards
   const paginateContent = useCallback(() => {
+    // Check if we should throttle pagination based on time elapsed
+    const now = Date.now();
+    const timeSinceLastChange = now - lastChangeTimestampRef.current;
+    
+    if (timeSinceLastChange < MIN_PAGINATION_INTERVAL) {
+      // Too soon after last change, wait a bit
+      if (paginationTimeoutRef.current) {
+        clearTimeout(paginationTimeoutRef.current);
+      }
+      
+      paginationTimeoutRef.current = setTimeout(() => {
+        paginateContent();
+      }, MIN_PAGINATION_INTERVAL);
+      return;
+    }
+    
     // Clear any existing timeout
     if (paginationTimeoutRef.current) {
       clearTimeout(paginationTimeoutRef.current);
@@ -51,6 +71,9 @@ export function usePaginationHandling(editor: CustomEditor, pageHeight: number) 
       }, PAGINATION_COOLDOWN);
       return;
     }
+    
+    // Update last change timestamp
+    lastChangeTimestampRef.current = now;
     
     // Set a new timeout for pagination with proper debouncing
     paginationTimeoutRef.current = setTimeout(() => {
@@ -82,10 +105,11 @@ export function usePaginationHandling(editor: CustomEditor, pageHeight: number) 
         isPaginatingRef.current = false;
         
         // If pagination was requested while we were paginating, run it again
+        // but with a delay to prevent tight loops
         if (paginationRequestedRef.current) {
           paginationRequestedRef.current = false;
           // Use setTimeout to avoid exceeding call stack
-          setTimeout(() => paginateContent(), 50);
+          setTimeout(() => paginateContent(), 200); // Increased delay
         }
       } catch (error) {
         console.error('Pagination error:', error);
@@ -93,23 +117,21 @@ export function usePaginationHandling(editor: CustomEditor, pageHeight: number) 
         // Reset pagination state after error
         setTimeout(() => resetPaginationAttempts(), PAGINATION_COOLDOWN);
       }
-    }, 200);
+    }, 300); // Increased from 200ms to 300ms for more debouncing
   }, [editor, pageHeight, resetPaginationAttempts]);
   
   // Handle paste event with pagination
   const handlePasteWithPagination = useCallback((event: React.ClipboardEvent<HTMLDivElement>) => {
-    // Let's not prevent default paste behavior
-    // Native browser paste handling is more reliable for formatting
-    
     // Reset pagination attempts on user-initiated paste
     resetPaginationAttempts();
     
     // Schedule pagination after paste has been processed
+    // but with a longer delay to ensure content is fully inserted
     setTimeout(() => {
       if (!isPaginatingRef.current) {
         paginateContent();
       }
-    }, 300);
+    }, 500); // Increased from 300ms to 500ms
   }, [paginateContent, resetPaginationAttempts]);
   
   // Clean up on unmount

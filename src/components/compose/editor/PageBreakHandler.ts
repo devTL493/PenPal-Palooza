@@ -177,7 +177,7 @@ export const handlePageBreaks = (editor: CustomEditor, pageHeight: number): bool
 
   try {
     let changesMade = false;
-    let maxIterations = 10; // Prevent infinite loops
+    let maxIterations = 5; // Reduce maximum iterations to prevent excessive page creation
     
     // Process until no more changes are needed or max iterations reached
     while (maxIterations > 0) {
@@ -190,8 +190,10 @@ export const handlePageBreaks = (editor: CustomEditor, pageHeight: number): bool
         })
       );
       
-      // Process each page
-      for (const [pageNode, pagePath] of pages) {
+      // Limit to processing at most one page per iteration to prevent cascading changes
+      if (pages.length > 0) {
+        const [pageNode, pagePath] = pages[0];
+        
         if (!Element.isElement(pageNode)) continue;
         
         // Check each child of the page
@@ -248,15 +250,17 @@ export const handlePageBreaks = (editor: CustomEditor, pageHeight: number): bool
             continue;
           }
         }
-        
-        // If we made changes to this page, break the loop and continue in next iteration
-        if (pageChanged) break;
       }
       
       // If no pages changed in this iteration, we're done
       if (!pageChanged) break;
       
       maxIterations--;
+    }
+    
+    // Always update page numbers if we made any changes
+    if (changesMade) {
+      updatePageNumbers(editor);
     }
     
     return changesMade;
@@ -277,16 +281,20 @@ export const updatePageNumbers = (editor: Editor): void => {
     );
     
     const totalPages = pages.length;
+    if (totalPages === 0) return;
     
     // Update each page
-    let currentPage = 0;
-    for (const [_, pagePath] of pages) {
-      currentPage++;
+    for (let i = 0; i < pages.length; i++) {
+      const [_, pagePath] = pages[i];
+      const currentPage = i + 1;
       
       // Update page element with page number and count
       Transforms.setNodes(
         editor,
-        { pageNumber: currentPage, pageCount: totalPages },
+        { 
+          pageNumber: currentPage, 
+          pageCount: totalPages 
+        },
         { at: pagePath }
       );
     }

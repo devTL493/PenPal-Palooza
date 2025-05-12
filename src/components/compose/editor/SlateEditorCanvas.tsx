@@ -91,10 +91,12 @@ const SlateEditorCanvas: React.FC<SlateEditorCanvasProps> = ({
   return (
     <div 
       ref={canvasRef}
-      className="canvas word-processor-canvas w-full overflow-auto h-[calc(100vh-200px)]"
+      className="canvas word-processor-canvas w-full overflow-auto"
       style={{ 
         scrollSnapType: 'y mandatory',
         position: 'relative',
+        height: 'calc(100vh - 240px)', // Increase padding to avoid header/toolbar overlap
+        paddingTop: '1rem' // Add padding to the top to avoid toolbar overlap
       }}
     >
       <div 
@@ -113,8 +115,6 @@ const SlateEditorCanvas: React.FC<SlateEditorCanvasProps> = ({
           onPaste={handlePasteWithPagination}
           spellCheck
           className="outline-none cursor-text"
-          // Remove the direct ref prop and replace with the proper attribute
-          // that the Editable component accepts, if needed
         />
       </div>
     </div>

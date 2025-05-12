@@ -21,7 +21,7 @@ export interface SplitPanelLayoutProps {
   };
   isReversed?: boolean;
   onToggleLayout?: () => void;
-  toggleButtonPosition?: 'top' | 'bottom' | 'center';
+  toggleButtonPosition?: 'top' | 'bottom' | 'center' | 'none';
   className?: string;
 }
 
@@ -33,7 +33,7 @@ const SplitPanelLayout: React.FC<SplitPanelLayoutProps> = ({
   rightPanel,
   isReversed = false,
   onToggleLayout,
-  toggleButtonPosition = 'top',
+  toggleButtonPosition = 'bottom',
   className = '',
 }) => {
   // Determine which content goes in which panel based on isReversed
@@ -52,14 +52,15 @@ const SplitPanelLayout: React.FC<SplitPanelLayoutProps> = ({
       case 'bottom':
         return 'bottom-4';
       case 'center':
-      default:
         return 'top-1/2 -translate-y-1/2';
+      case 'none':
+      default:
+        return 'hidden';
     }
   };
 
-  // Handler for the toggle button click with console log for debugging
+  // Handler for the toggle button click
   const handleToggleClick = () => {
-    console.log('Toggle button clicked, isReversed before:', isReversed);
     if (onToggleLayout) {
       onToggleLayout();
     }
@@ -90,12 +91,12 @@ const SplitPanelLayout: React.FC<SplitPanelLayoutProps> = ({
         </ResizablePanel>
       </ResizablePanelGroup>
       
-      {onToggleLayout && (
+      {toggleButtonPosition !== 'none' && onToggleLayout && (
         <Button 
           variant="outline" 
           size="icon"
           className={`absolute left-1/2 -translate-x-1/2 z-10 bg-background shadow ${getToggleButtonPosition()}`}
-          onClick={handleToggleClick} // Use the new handler
+          onClick={handleToggleClick}
           title={`Switch panel positions (currently ${isReversed ? "reversed" : "normal"})`}
         >
           {isReversed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}

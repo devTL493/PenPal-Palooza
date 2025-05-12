@@ -70,12 +70,12 @@ const Compose = () => {
     <div className="p-4 h-full overflow-y-auto">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-lg font-semibold">Conversation with {recipientName || "Pen Pal"}</h2>
+        {/* Move panel swap button here for better positioning */}
         <Button 
           variant="outline"
           size="sm"
           onClick={togglePanelPosition}
           title="Switch panel positions"
-          className="lg:hidden"
         >
           <ArrowLeftRight className="h-4 w-4" />
         </Button>
@@ -123,7 +123,7 @@ const Compose = () => {
               isReversed={isPanelReversed}
               onToggleLayout={togglePanelPosition}
               className="h-[calc(100vh-160px)]"
-              toggleButtonPosition="center"
+              toggleButtonPosition="bottom"
             />
           ) : (
             <ComposeMobileLayout 

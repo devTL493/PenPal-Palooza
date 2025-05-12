@@ -5,9 +5,11 @@
  */
 
 .word-processor-canvas {
-  height: calc(100vh - 200px);
+  height: calc(100vh - 240px); /* Increased height to avoid overlap */
   overflow-y: auto;
   scroll-snap-type: y mandatory;
+  padding-top: 1rem; /* Add padding to avoid toolbar overlap */
+  position: relative;
 }
 
 .page {
@@ -47,6 +49,7 @@
   text-align: center;
   font-size: 0.75rem;
   color: #666;
+  pointer-events: none; /* Prevent interaction with page numbers */
 }
 
 /* Border styles */
